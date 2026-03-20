@@ -11,9 +11,11 @@ Use the steps for your OS, then run the bootstrap:
 The bootstrap:
 
 - installs packages with the native package manager when available
-- installs core CLI tools including `bat`, `btop`, `delta`, `direnv`, `fd`, `jq`, `lazygit`, `neovim`, and `ripgrep`
-- installs VS Code where supported by the platform package manager or `snap`
+- installs shell and navigation tools including `zsh`, `starship`, `zoxide`, `fzf`, and `direnv`
+- installs editor, terminal, and session tools including `neovim`, `tmux`, `ghostty`, `opencode`, and VS Code where supported by the platform package manager or `snap`
+- installs CLI utilities including `bat`, `btop`, `curl`, `delta`, `eza`, `fd`, `git`, `jq`, `lazygit`, `ripgrep`, `stow`, and `sudo` where the platform setup calls for it
 - falls back to upstream installers for `starship`, `mise`, and `opencode` when needed
+- installs runtime management with `mise`
 - sets the global Git default branch to `main`
 - tries to set Zsh as the default shell
 - applies the Stow packages
