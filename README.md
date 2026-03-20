@@ -25,10 +25,22 @@ The bootstrap:
 
 ## macOS
 
-Prerequisites:
+Use your normal user account, not `root`.
 
-- install Homebrew first
-- use your normal user account, not `root`
+Install Homebrew first:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+eval "$(/opt/homebrew/bin/brew shellenv)"
+brew --version
+```
+
+If `brew --version` fails on Intel macOS, use:
+
+```bash
+eval "$(/usr/local/bin/brew shellenv)"
+brew --version
+```
 
 Setup:
 
@@ -74,6 +86,20 @@ Use a normal user with `sudo` access.
 
 If you are on a fresh Arch install and still need to create a user, do that first, add the user to `wheel`, enable `sudo` for `wheel`, then sign back in as that user.
 
+Example user and sudo setup on a fresh Arch install:
+
+```bash
+useradd -m -G wheel -s /bin/bash <username>
+passwd <username>
+EDITOR=vi visudo
+```
+
+Then uncomment this line in `visudo`:
+
+```text
+%wheel ALL=(ALL:ALL) ALL
+```
+
 Initial setup:
 
 ```bash
@@ -100,6 +126,7 @@ From an elevated PowerShell session on Windows:
 wsl --install -d Ubuntu
 winget install --id Microsoft.VisualStudioCode -e
 code --install-extension ms-vscode-remote.remote-wsl
+wsl -l -v
 ```
 
 Then inside Ubuntu:
@@ -123,6 +150,7 @@ From Windows:
 ```powershell
 winget install --id Microsoft.VisualStudioCode -e
 code --install-extension ms-vscode-remote.remote-wsl
+wsl -l -v
 ```
 
 Then inside the Arch WSL distro:
