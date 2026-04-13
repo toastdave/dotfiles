@@ -12,10 +12,10 @@ The bootstrap:
 
 - installs packages with the native package manager when available
 - installs shell and navigation tools including `zsh`, `starship`, `zoxide`, `fzf`, and `direnv`
-- installs editor, terminal, and session tools including `neovim`, `tmux`, `ghostty`, `opencode`, and VS Code where supported by the platform package manager or `snap`
+- installs editor, terminal, and session tools including `neovim`, `tmux`, `ghostty`, and VS Code where supported by the platform package manager or `snap`
 - installs CLI utilities including `bat`, `btop`, `curl`, `delta`, `eza`, `fd`, `git`, `jq`, `lazygit`, `ripgrep`, `stow`, and `sudo` where the platform setup calls for it
-- falls back to upstream installers for `starship`, `mise`, and `opencode` when needed
-- installs runtime management with `mise`
+- falls back to upstream installers for `starship` and `mise` when needed
+- installs runtimes and selected AI tools with `mise`, including `opencode`, `pi-agent`, and `agent-browser`
 - sets the global Git default branch to `main`
 - tries to set Zsh as the default shell
 - applies the Stow packages
@@ -116,6 +116,31 @@ cd ~/dotfiles
 ./scripts/bootstrap.sh
 ```
 
+## Fedora
+
+Use a normal user with `sudo` access.
+
+Initial setup:
+
+```bash
+sudo dnf upgrade -y
+sudo dnf install -y git sudo
+sudo -v
+```
+
+Then bootstrap:
+
+```bash
+git clone <repo-url> ~/dotfiles
+cd ~/dotfiles
+./scripts/bootstrap.sh
+```
+
+Notes:
+
+- Fedora installs the core system tools with `dnf`
+- `code` and `ghostty` are still best-effort and may require extra repos depending on the machine
+
 ## Windows + WSL
 
 ### Ubuntu in WSL
@@ -184,6 +209,7 @@ rg --version
 starship --version
 mise --version
 opencode --version
+pi --version
 tmux -V
 git config --global --get init.defaultBranch
 ```
@@ -196,7 +222,8 @@ main
 
 ## Notes
 
-- `ghostty`, `code`, and `opencode` are best-effort installs; bootstrap reports skipped or failed steps at the end
+- `ghostty` and `code` are best-effort native installs; bootstrap reports skipped or failed steps at the end
+- `mise install` manages `opencode`, `pi-agent`, and `agent-browser`, and any failures are listed at the end of the bootstrap report with the attempted command output
 - `tmux` uses `tmux-256color` when available, falls back to `screen-256color`, and enables mouse support for scrolling and pane clicks
 - `tmux` uses TPM with `TMUX_PLUGIN_MANAGER_PATH` set to `~/.local/share/tmux/plugins/`
 - bootstrap installs TPM and the declared tmux plugins automatically, so `prefix + I` is not required on a fresh setup

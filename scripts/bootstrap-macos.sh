@@ -4,8 +4,6 @@ install_platform_packages() {
     return 1
   fi
 
-  run_shell "Tap OpenCode Homebrew repository" "brew tap anomalyco/tap"
-
   install_brew_formula git
   install_brew_formula btop
   install_brew_formula curl
@@ -25,7 +23,6 @@ install_platform_packages() {
   install_brew_formula mise
   install_brew_formula tmux
   install_brew_formula fzf
-  install_brew_formula opencode
   install_brew_cask ghostty
   install_brew_cask visual-studio-code
 }

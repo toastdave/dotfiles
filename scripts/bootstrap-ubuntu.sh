@@ -32,5 +32,4 @@ install_platform_packages() {
   install_snap_package ghostty --classic
   install_apt_package starship || install_starship_fallback
   install_apt_package mise || install_mise_fallback
-  install_apt_package opencode || install_opencode_fallback
 }

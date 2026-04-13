@@ -1,7 +1,10 @@
 [tools]
 bun = "latest"
+"github:anomalyco/opencode" = "latest"
 go = "latest"
 node = "lts"
+"npm:agent-browser" = "latest"
+"npm:@mariozechner/pi-coding-agent" = "latest"
 pnpm = "latest"
 python = "latest"
 uv = "latest"

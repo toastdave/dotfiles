@@ -13,6 +13,9 @@ export PATH="$HOME/.local/bin:$PATH"
 SUCCESS_ITEMS=()
 WARNING_ITEMS=()
 FAILED_ITEMS=()
+COMMAND_FAILURE_LABELS=()
+COMMAND_FAILURE_COMMANDS=()
+COMMAND_FAILURE_OUTPUTS=()
 
 PACKAGES=(zsh starship mise ghostty opencode tmux)
 
@@ -43,30 +46,69 @@ record_failure() {
   log "[fail] $1"
 }
 
+record_command_failure() {
+  local label=$1
+  local command=$2
+  local output=$3
+
+  COMMAND_FAILURE_LABELS+=("$label")
+  COMMAND_FAILURE_COMMANDS+=("$command")
+  COMMAND_FAILURE_OUTPUTS+=("$output")
+}
+
+format_command() {
+  local arg
+  local formatted=""
+  local quoted
+
+  for arg in "$@"; do
+    printf -v quoted '%q' "$arg"
+    if [ -n "$formatted" ]; then
+      formatted="$formatted $quoted"
+    else
+      formatted="$quoted"
+    fi
+  done
+
+  printf '%s' "$formatted"
+}
+
 run_cmd() {
   local label=$1
+  local output
+  local status
+  local command
   shift
 
-  if "$@"; then
+  if output=$("$@" 2>&1); then
     record_success "$label"
     return 0
   fi
 
+  status=$?
+  command=$(format_command "$@")
+  record_command_failure "$label" "$command" "$output"
+
   record_warning "$label"
-  return 1
+  return "$status"
 }
 
 run_shell() {
   local label=$1
   local command=$2
+  local output
+  local status
 
-  if bash -lc "$command"; then
+  if output=$(bash -lc "$command" 2>&1); then
     record_success "$label"
     return 0
   fi
 
+  status=$?
+  record_command_failure "$label" "$command" "$output"
+
   record_warning "$label"
-  return 1
+  return "$status"
 }
 
 have() {
@@ -101,6 +143,11 @@ install_pacman_package() {
   run_shell "Install $package with pacman" "$SUDO pacman -S --noconfirm --needed $package"
 }
 
+install_dnf_package() {
+  local package=$1
+  run_shell "Install $package with dnf" "$SUDO dnf install -y $package"
+}
+
 install_snap_package() {
   local package=$1
   local flags=${2:-}
@@ -132,14 +179,6 @@ install_mise_fallback() {
     return 0
   fi
   run_shell "Install mise with upstream script" "curl -fsSL https://mise.run | sh"
-}
-
-install_opencode_fallback() {
-  if have opencode; then
-    record_success "opencode already available"
-    return 0
-  fi
-  run_shell "Install opencode with upstream script" "curl -fsSL https://opencode.ai/install | bash"
 }
 
 set_git_default_branch() {
@@ -221,10 +260,10 @@ stow_packages() {
 
 run_mise_install() {
   if ! have mise; then
-    record_warning "mise not available, skipping runtime install"
+    record_warning "mise not available, skipping mise install"
     return 1
   fi
-  run_shell "Install runtimes with mise" "mise install"
+  run_shell "Install mise-managed tools" "mise install"
 }
 
 report_path_setup() {
@@ -262,6 +301,10 @@ detect_platform() {
           ;;
         arch)
           TARGET_SCRIPT="$SCRIPT_DIR/bootstrap-arch.sh"
+          return 0
+          ;;
+        fedora)
+          TARGET_SCRIPT="$SCRIPT_DIR/bootstrap-fedora.sh"
           return 0
           ;;
       esac
@@ -316,6 +359,19 @@ print_report() {
   log "Failures: ${#FAILED_ITEMS[@]}"
   for item in "${FAILED_ITEMS[@]}"; do
     log "  - $item"
+  done
+
+  log "Command errors: ${#COMMAND_FAILURE_LABELS[@]}"
+  for i in "${!COMMAND_FAILURE_LABELS[@]}"; do
+    log "  - ${COMMAND_FAILURE_LABELS[$i]}"
+    log "    command: ${COMMAND_FAILURE_COMMANDS[$i]}"
+    if [ -n "${COMMAND_FAILURE_OUTPUTS[$i]}" ]; then
+      while IFS= read -r line; do
+        log "    output: $line"
+      done <<< "${COMMAND_FAILURE_OUTPUTS[$i]}"
+    else
+      log "    output: <none>"
+    fi
   done
 }
 

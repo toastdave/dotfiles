@@ -25,5 +25,4 @@ install_platform_packages() {
   install_pacman_package fzf
   install_pacman_package code
   install_pacman_package ghostty
-  install_pacman_package opencode
 }
