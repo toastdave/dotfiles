@@ -6,23 +6,11 @@ install_platform_packages() {
 
   run_shell "Update apt package index" "$SUDO apt-get update"
 
-  install_apt_package git
-  install_apt_package btop
-  install_apt_package curl
-  install_apt_package direnv
-  install_apt_package stow
-  install_apt_package zsh
-  install_apt_package bat
-  install_apt_package fd-find
+  install_apt_packages "Install Ubuntu core packages" git btop curl direnv stow zsh bat fd-find jq neovim ripgrep tmux fzf
   install_apt_package eza
   install_apt_package git-delta
-  install_apt_package jq
   install_apt_package lazygit
-  install_apt_package neovim
-  install_apt_package ripgrep
   install_apt_package zoxide
-  install_apt_package tmux
-  install_apt_package fzf
 
   if [ "$IS_WSL" -eq 1 ]; then
     record_success "Skipping Linux VS Code install inside WSL"

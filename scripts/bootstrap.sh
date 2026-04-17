@@ -31,6 +31,11 @@ log() {
   printf '%s\n' "$1"
 }
 
+log_step() {
+  log ""
+  log "==> $1"
+}
+
 record_success() {
   SUCCESS_ITEMS+=("$1")
   log "[ok] $1"
@@ -73,22 +78,64 @@ format_command() {
   printf '%s' "$formatted"
 }
 
-run_cmd() {
+run_live_command() {
   local label=$1
+  local command=$2
+  local output_file
   local output
   local status
-  local command
-  shift
 
-  if output=$("$@" 2>&1); then
+  output_file=$(mktemp) || {
+    record_warning "Unable to create temp log for $label"
+    return 1
+  }
+
+  log_step "$label"
+  log "    \$ $command"
+
+  bash -lc "$command" 2>&1 | tee "$output_file"
+  status=${PIPESTATUS[0]}
+  output=$(<"$output_file")
+  rm -f "$output_file"
+
+  if [ "$status" -eq 0 ]; then
     record_success "$label"
     return 0
   fi
 
-  status=$?
-  command=$(format_command "$@")
   record_command_failure "$label" "$command" "$output"
+  record_warning "$label"
+  return "$status"
+}
 
+run_cmd() {
+  local label=$1
+  local command
+  local output_file
+  local output
+  local status
+  shift
+
+  command=$(format_command "$@")
+  output_file=$(mktemp) || {
+    record_warning "Unable to create temp log for $label"
+    return 1
+  }
+
+  log_step "$label"
+  log "    \$ $command"
+
+  "$@" 2>&1 | tee "$output_file"
+  status=${PIPESTATUS[0]}
+  output=$(<"$output_file")
+  rm -f "$output_file"
+
+  if [ "$status" -eq 0 ]; then
+    record_success "$label"
+    return 0
+  fi
+
+  record_command_failure "$label" "$command" "$output"
   record_warning "$label"
   return "$status"
 }
@@ -96,19 +143,8 @@ run_cmd() {
 run_shell() {
   local label=$1
   local command=$2
-  local output
-  local status
 
-  if output=$(bash -lc "$command" 2>&1); then
-    record_success "$label"
-    return 0
-  fi
-
-  status=$?
-  record_command_failure "$label" "$command" "$output"
-
-  record_warning "$label"
-  return "$status"
+  run_live_command "$label" "$command"
 }
 
 have() {
@@ -133,9 +169,35 @@ install_brew_cask() {
   run_shell "Install $package with Homebrew cask" "brew install --cask $package"
 }
 
+install_brew_formulas() {
+  local label=$1
+  local package
+  local missing_packages=()
+  shift
+
+  for package in "$@"; do
+    if ! brew list --formula "$package" >/dev/null 2>&1; then
+      missing_packages+=("$package")
+    fi
+  done
+
+  if [ "${#missing_packages[@]}" -eq 0 ]; then
+    record_success "$label already satisfied"
+    return 0
+  fi
+
+  run_shell "$label" "brew install ${missing_packages[*]}"
+}
+
 install_apt_package() {
   local package=$1
   run_shell "Install $package with apt" "$SUDO apt-get install -y $package"
+}
+
+install_apt_packages() {
+  local label=$1
+  shift
+  run_shell "$label" "$SUDO apt-get install -y $*"
 }
 
 install_pacman_package() {
@@ -143,9 +205,21 @@ install_pacman_package() {
   run_shell "Install $package with pacman" "$SUDO pacman -S --noconfirm --needed $package"
 }
 
+install_pacman_packages() {
+  local label=$1
+  shift
+  run_shell "$label" "$SUDO pacman -S --noconfirm --needed $*"
+}
+
 install_dnf_package() {
   local package=$1
   run_shell "Install $package with dnf" "$SUDO dnf install -y $package"
+}
+
+install_dnf_packages() {
+  local label=$1
+  shift
+  run_shell "$label" "$SUDO dnf install -y $*"
 }
 
 install_snap_package() {
@@ -179,6 +253,20 @@ install_mise_fallback() {
     return 0
   fi
   run_shell "Install mise with upstream script" "curl -fsSL https://mise.run | sh"
+}
+
+ensure_sudo_access() {
+  if [ -z "$SUDO" ]; then
+    if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+      record_success "Running as root, sudo not required"
+      return 0
+    fi
+
+    record_warning "sudo is not available; privileged install steps may fail"
+    return 1
+  fi
+
+  run_shell "Refresh sudo credentials" "$SUDO -v"
 }
 
 set_git_default_branch() {
@@ -332,6 +420,7 @@ main() {
   . "$TARGET_SCRIPT"
 
   report_path_setup
+  ensure_sudo_access
   install_platform_packages
   set_git_default_branch
   set_default_shell_to_zsh

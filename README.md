@@ -22,6 +22,7 @@ The bootstrap:
 - installs TPM into `~/.local/share/tmux/plugins/tpm`
 - installs declared tmux plugins non-interactively
 - runs `mise install`
+- streams command output live so package manager and bootstrap logs are visible while it runs
 
 ## macOS
 
@@ -140,6 +141,7 @@ Notes:
 
 - Fedora installs the core system tools with `dnf`
 - `code` and `ghostty` are still best-effort and may require extra repos depending on the machine
+- bootstrap batches the Fedora core package install to avoid the slow per-package `dnf` loop
 
 ## Windows + WSL
 
@@ -224,6 +226,7 @@ main
 
 - `ghostty` and `code` are best-effort native installs; bootstrap reports skipped or failed steps at the end
 - `mise install` manages `opencode`, `pi-agent`, and `agent-browser`, and any failures are listed at the end of the bootstrap report with the attempted command output
+- native package manager commands now stream their logs live during bootstrap instead of buffering output until the end
 - `tmux` uses `tmux-256color` when available, falls back to `screen-256color`, and enables mouse support for scrolling and pane clicks
 - `tmux` uses TPM with `TMUX_PLUGIN_MANAGER_PATH` set to `~/.local/share/tmux/plugins/`
 - bootstrap installs TPM and the declared tmux plugins automatically, so `prefix + I` is not required on a fresh setup
