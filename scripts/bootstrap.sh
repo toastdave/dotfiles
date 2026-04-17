@@ -240,6 +240,98 @@ install_snap_package() {
   run_shell "Install $package with snap" "$SUDO snap install $package $flags"
 }
 
+have_jetbrainsmono_nerd_font() {
+  local match=""
+  local linux_fonts_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts"
+
+  case "$(uname -s)" in
+    Darwin)
+      if compgen -G "$HOME/Library/Fonts/JetBrainsMonoNerdFont*.ttf" >/dev/null; then
+        return 0
+      fi
+      if compgen -G "$HOME/Library/Fonts/JetBrainsMonoNerdFont*.otf" >/dev/null; then
+        return 0
+      fi
+      ;;
+    *)
+      if have fc-match; then
+        match=$(fc-match "JetBrainsMono Nerd Font" 2>/dev/null || true)
+        case "$match" in
+          *JetBrainsMonoNerdFont*)
+            return 0
+            ;;
+        esac
+      fi
+
+      if compgen -G "$linux_fonts_dir/JetBrainsMonoNerdFont*.ttf" >/dev/null; then
+        return 0
+      fi
+      if compgen -G "$linux_fonts_dir/JetBrainsMonoNerdFont*.otf" >/dev/null; then
+        return 0
+      fi
+      ;;
+  esac
+
+  return 1
+}
+
+install_jetbrainsmono_nerd_font() {
+  local archive=""
+  local fonts_dir=""
+  local tmpdir=""
+
+  if have_jetbrainsmono_nerd_font; then
+    record_success "JetBrainsMono Nerd Font already installed"
+    return 0
+  fi
+
+  if ! have curl; then
+    record_warning "curl is not available, skipping JetBrainsMono Nerd Font install"
+    return 1
+  fi
+
+  if ! have unzip; then
+    record_warning "unzip is not available, skipping JetBrainsMono Nerd Font install"
+    return 1
+  fi
+
+  case "$(uname -s)" in
+    Darwin)
+      fonts_dir="$HOME/Library/Fonts"
+      ;;
+    *)
+      fonts_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts"
+      ;;
+  esac
+
+  tmpdir=$(mktemp -d) || {
+    record_warning "Unable to create temp directory for font install"
+    return 1
+  }
+  archive="$tmpdir/JetBrainsMono.zip"
+
+  if ! run_shell "Create user font directory" "mkdir -p \"$fonts_dir\""; then
+    rm -rf "$tmpdir"
+    return 1
+  fi
+
+  if ! run_shell "Download JetBrainsMono Nerd Font" "curl -fsSL -o \"$archive\" https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"; then
+    rm -rf "$tmpdir"
+    return 1
+  fi
+
+  if ! run_shell "Install JetBrainsMono Nerd Font" "unzip -o -j \"$archive\" '*.ttf' '*.otf' -d \"$fonts_dir\""; then
+    rm -rf "$tmpdir"
+    return 1
+  fi
+
+  if [ "$(uname -s)" = "Linux" ] && have fc-cache; then
+    run_shell "Refresh font cache" "fc-cache -f \"$fonts_dir\""
+  fi
+
+  rm -rf "$tmpdir"
+}
+
 resolve_mise_bin() {
   local candidate=""
   local command_path=""
@@ -352,6 +444,8 @@ install_tmux_plugins() {
 
 set_default_shell_to_zsh() {
   local zsh_path
+  local login_shell=""
+  local passwd_entry=""
 
   if ! have zsh; then
     record_warning "zsh not installed yet, skipping default shell change"
@@ -360,8 +454,21 @@ set_default_shell_to_zsh() {
 
   zsh_path=$(command -v zsh)
 
-  if [ "${SHELL:-}" = "$zsh_path" ]; then
-    record_success "zsh already set as default shell"
+  if have getent; then
+    passwd_entry=$(getent passwd "$USER" 2>/dev/null || true)
+  elif [ -r /etc/passwd ]; then
+    passwd_entry=$(grep "^$USER:" /etc/passwd 2>/dev/null || true)
+  fi
+
+  if [ -n "$passwd_entry" ]; then
+    login_shell=${passwd_entry##*:}
+  fi
+
+  if [ "$login_shell" = "$zsh_path" ]; then
+    record_success "zsh already set as login shell"
+    if [ "${SHELL:-}" != "$zsh_path" ]; then
+      record_warning "Current session still reports ${SHELL:-unknown}; start a new login shell to pick up zsh"
+    fi
     return 0
   fi
 
@@ -375,7 +482,32 @@ set_default_shell_to_zsh() {
     return 1
   fi
 
-  run_shell "Set zsh as default shell" "chsh -s \"$zsh_path\" \"$USER\""
+  if ! run_shell "Set zsh as default shell" "chsh -s \"$zsh_path\" \"$USER\""; then
+    return 1
+  fi
+
+  passwd_entry=""
+  if have getent; then
+    passwd_entry=$(getent passwd "$USER" 2>/dev/null || true)
+  elif [ -r /etc/passwd ]; then
+    passwd_entry=$(grep "^$USER:" /etc/passwd 2>/dev/null || true)
+  fi
+
+  if [ -n "$passwd_entry" ]; then
+    login_shell=${passwd_entry##*:}
+  else
+    login_shell=""
+  fi
+
+  if [ "$login_shell" != "$zsh_path" ]; then
+    record_warning "Login shell is still ${login_shell:-unknown} after chsh"
+    return 1
+  fi
+
+  record_success "Verified zsh as login shell"
+  if [ "${SHELL:-}" != "$zsh_path" ]; then
+    record_warning "Current session still reports ${SHELL:-unknown}; start a new login shell to pick up zsh"
+  fi
 }
 
 stow_packages() {
@@ -471,6 +603,7 @@ main() {
   ensure_sudo_access
   install_platform_packages
   install_mise
+  install_jetbrainsmono_nerd_font
   install_platform_gui_apps
   set_git_default_branch
   set_default_shell_to_zsh

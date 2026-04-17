@@ -6,7 +6,7 @@ install_platform_packages() {
 
   run_shell "Update apt package index" "$SUDO apt-get update"
 
-  install_apt_packages "Install Ubuntu bootstrap packages" git curl stow zsh tmux
+  install_apt_packages "Install Ubuntu bootstrap packages" git curl stow zsh tmux unzip fontconfig
 }
 
 install_platform_gui_apps() {

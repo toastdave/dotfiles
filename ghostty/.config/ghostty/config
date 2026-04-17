@@ -1,6 +1,8 @@
 macos-titlebar-style = hidden
 window-decoration = server
 gtk-titlebar = false
+command = zsh
+font-family = "JetBrainsMono Nerd Font"
 
 theme = Catppuccin Macchiato
 font-size = 20

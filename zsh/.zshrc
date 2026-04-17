@@ -1,5 +1,15 @@
 export PATH="$HOME/.local/bin:$PATH"
 
+if [ -x "$HOME/.local/bin/mise" ]; then
+  eval "$("$HOME/.local/bin/mise" activate zsh)"
+elif [ -x "/usr/local/bin/mise" ]; then
+  eval "$("/usr/local/bin/mise" activate zsh)"
+elif [ -x "/opt/homebrew/bin/mise" ]; then
+  eval "$("/opt/homebrew/bin/mise" activate zsh)"
+elif command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+
 if command -v eza >/dev/null 2>&1; then
   alias ls='eza --all --long --group-directories-first --icons --header --time-style long-iso'
 fi
@@ -26,14 +36,4 @@ fi
 
 if command -v starship >/dev/null 2>&1; then
   eval "$(starship init zsh)"
-fi
-
-if [ -x "$HOME/.local/bin/mise" ]; then
-  eval "$("$HOME/.local/bin/mise" activate zsh)"
-elif [ -x "/usr/local/bin/mise" ]; then
-  eval "$("/usr/local/bin/mise" activate zsh)"
-elif [ -x "/opt/homebrew/bin/mise" ]; then
-  eval "$("/opt/homebrew/bin/mise" activate zsh)"
-elif command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate zsh)"
 fi

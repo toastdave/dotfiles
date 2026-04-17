@@ -4,7 +4,7 @@ install_platform_packages() {
     return 1
   fi
 
-  install_pacman_packages "Install Arch bootstrap packages" git curl stow zsh tmux
+  install_pacman_packages "Install Arch bootstrap packages" git curl stow zsh tmux unzip fontconfig
 }
 
 install_platform_gui_apps() {
