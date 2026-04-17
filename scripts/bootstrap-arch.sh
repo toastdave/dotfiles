@@ -4,13 +4,16 @@ install_platform_packages() {
     return 1
   fi
 
-  install_pacman_packages "Install Arch core packages" git btop curl direnv stow zsh bat fd jq neovim ripgrep tmux fzf
-  install_pacman_package eza
-  install_pacman_package delta
-  install_pacman_package lazygit
-  install_pacman_package zoxide
-  install_pacman_package starship
-  install_pacman_package mise
+  install_pacman_packages "Install Arch bootstrap packages" git curl stow zsh tmux
+}
+
+install_platform_gui_apps() {
+  if [ "$IS_WSL" -eq 1 ]; then
+    record_success "Skipping Linux VS Code install inside WSL"
+    record_success "Skipping Ghostty install inside WSL"
+    return 0
+  fi
+
   install_pacman_package code
   install_pacman_package ghostty
 }

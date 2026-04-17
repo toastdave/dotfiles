@@ -4,7 +4,10 @@ install_platform_packages() {
     return 1
   fi
 
-  install_brew_formulas "Install macOS Homebrew formulas" git btop curl direnv stow zsh bat fd eza git-delta jq lazygit neovim ripgrep zoxide starship mise tmux fzf
+  install_brew_formulas "Install macOS Homebrew bootstrap formulas" git curl stow zsh tmux
+}
+
+install_platform_gui_apps() {
   install_brew_cask ghostty
   install_brew_cask visual-studio-code
 }

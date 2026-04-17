@@ -6,13 +6,18 @@ install_platform_packages() {
 
   run_shell "Refresh dnf metadata" "$SUDO dnf makecache"
 
-  install_dnf_packages "Install Fedora core packages" git btop curl direnv stow zsh bat fd-find jq neovim ripgrep tmux fzf
-  install_dnf_package eza
-  install_dnf_package git-delta
-  install_dnf_package lazygit
-  install_dnf_package zoxide
-  install_dnf_package starship
-  install_dnf_package mise || install_mise_fallback
+  install_dnf_packages "Install Fedora bootstrap packages" git curl stow zsh tmux
+}
+
+install_platform_gui_apps() {
+  if [ "$IS_WSL" -eq 1 ]; then
+    record_success "Skipping Linux VS Code install inside WSL"
+    record_success "Skipping Ghostty install inside WSL"
+    return 0
+  fi
+
+  run_shell "Install VS Code RPM repository" "$SUDO rpm --import https://packages.microsoft.com/keys/microsoft.asc && printf '%s\\n' '[code]' 'name=Visual Studio Code' 'baseurl=https://packages.microsoft.com/yumrepos/vscode' 'enabled=1' 'autorefresh=1' 'type=rpm-md' 'gpgcheck=1' 'gpgkey=https://packages.microsoft.com/keys/microsoft.asc' | $SUDO tee /etc/yum.repos.d/vscode.repo >/dev/null"
   install_dnf_package code
+  run_shell "Install Ghostty Fedora repository" ". /etc/os-release && curl -fsSL \"https://copr.fedorainfracloud.org/coprs/scottames/ghostty/repo/fedora-${VERSION_ID}/scottames-ghostty-fedora-${VERSION_ID}.repo\" | $SUDO tee /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:scottames:ghostty.repo >/dev/null"
   install_dnf_package ghostty
 }

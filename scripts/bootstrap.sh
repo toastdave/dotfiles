@@ -7,6 +7,7 @@ DOTFILES_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 TMUX_PLUGIN_MANAGER_PATH="$XDG_DATA_HOME/tmux/plugins"
 IS_WSL=0
+MISE_BIN=""
 
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -239,20 +240,62 @@ install_snap_package() {
   run_shell "Install $package with snap" "$SUDO snap install $package $flags"
 }
 
-install_starship_fallback() {
-  if have starship; then
-    record_success "starship already available"
-    return 0
+resolve_mise_bin() {
+  local candidate=""
+  local command_path=""
+  local candidates=()
+
+  if command_path=$(command -v mise 2>/dev/null); then
+    candidates+=("$command_path")
   fi
-  run_shell "Install starship with upstream script" "curl -fsSL https://starship.rs/install.sh | sh -s -- -y"
+
+  candidates+=("/usr/local/bin/mise" "/opt/homebrew/bin/mise" "$HOME/.local/bin/mise")
+
+  for candidate in "${candidates[@]}"; do
+    if [ -n "$candidate" ] && [ -x "$candidate" ]; then
+      MISE_BIN="$candidate"
+      return 0
+    fi
+  done
+
+  MISE_BIN=""
+  return 1
 }
 
-install_mise_fallback() {
-  if have mise; then
-    record_success "mise already available"
+install_mise() {
+  local install_path=""
+  local install_dir=""
+  local installer_prefix=""
+
+  if resolve_mise_bin; then
+    record_success "mise already available at $MISE_BIN"
     return 0
   fi
-  run_shell "Install mise with upstream script" "curl -fsSL https://mise.run | sh"
+
+  if ! have curl; then
+    record_failure "curl is required to install mise"
+    return 1
+  fi
+
+  if [ -n "$SUDO" ] || [ "${EUID:-$(id -u)}" -eq 0 ] || [ -w /usr/local/bin ]; then
+    install_path="/usr/local/bin/mise"
+    install_dir="/usr/local/bin"
+    installer_prefix="$SUDO"
+  else
+    install_path="$HOME/.local/bin/mise"
+    install_dir="$HOME/.local/bin"
+  fi
+
+  run_shell "Create mise install directory" "${installer_prefix:+$installer_prefix }mkdir -p \"$install_dir\""
+  run_shell "Install mise with official installer" "curl -fsSL https://mise.run | ${installer_prefix:+$installer_prefix }env MISE_INSTALL_PATH=\"$install_path\" sh"
+
+  if ! resolve_mise_bin; then
+    record_failure "mise was not found after installation"
+    return 1
+  fi
+
+  export PATH="${MISE_BIN%/*}:$PATH"
+  run_shell "Verify mise installation" "\"$MISE_BIN\" --version"
 }
 
 ensure_sudo_access() {
@@ -347,11 +390,16 @@ stow_packages() {
 }
 
 run_mise_install() {
-  if ! have mise; then
+  if ! resolve_mise_bin; then
     record_warning "mise not available, skipping mise install"
     return 1
   fi
-  run_shell "Install mise-managed tools" "mise install"
+  export PATH="${MISE_BIN%/*}:$PATH"
+  run_shell "Install mise-managed tools" "\"$MISE_BIN\" install --raw"
+}
+
+install_platform_gui_apps() {
+  return 0
 }
 
 report_path_setup() {
@@ -422,6 +470,8 @@ main() {
   report_path_setup
   ensure_sudo_access
   install_platform_packages
+  install_mise
+  install_platform_gui_apps
   set_git_default_branch
   set_default_shell_to_zsh
   stow_packages

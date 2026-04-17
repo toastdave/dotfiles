@@ -10,18 +10,16 @@ Use the steps for your OS, then run the bootstrap:
 
 The bootstrap:
 
-- installs packages with the native package manager when available
-- installs shell and navigation tools including `zsh`, `starship`, `zoxide`, `fzf`, and `direnv`
-- installs editor, terminal, and session tools including `neovim`, `tmux`, `ghostty`, and VS Code where supported by the platform package manager or `snap`
-- installs CLI utilities including `bat`, `btop`, `curl`, `delta`, `eza`, `fd`, `git`, `jq`, `lazygit`, `ripgrep`, `stow`, and `sudo` where the platform setup calls for it
-- falls back to upstream installers for `starship` and `mise` when needed
-- installs runtimes and selected AI tools with `mise`, including `opencode`, `pi-agent`, and `agent-browser`
+- installs a small native bootstrap set including `curl`, `git`, `stow`, `zsh`, and `tmux`
+- installs `mise` with the official installer and verifies the binary before using it later in the script
+- installs most CLIs and runtimes with `mise`, including `bat`, `btop`, `delta`, `direnv`, `eza`, `fd`, `fzf`, `jq`, `lazygit`, `neovim`, `opencode`, `ripgrep`, `starship`, `uv`, `zoxide`, `pi-agent`, and `agent-browser`
+- installs GUI apps with the best available OS-specific path, including `ghostty` and VS Code where supported
 - sets the global Git default branch to `main`
 - tries to set Zsh as the default shell
 - applies the Stow packages
 - installs TPM into `~/.local/share/tmux/plugins/tpm`
 - installs declared tmux plugins non-interactively
-- runs `mise install`
+- runs `mise install --raw`
 - streams command output live so package manager and bootstrap logs are visible while it runs
 
 ## macOS
@@ -76,10 +74,9 @@ cd ~/dotfiles
 
 Notes:
 
-- `ghostty` is installed via `snap` when `snap` is available
-- outside WSL, Linux `code` is installed via `snap` when available
-- on Debian/Ubuntu systems where the package exposes `batcat` instead of `bat`, the Zsh config aliases `bat` to `batcat`
-- on Debian/Ubuntu systems where the package exposes `fdfind` instead of `fd`, the Zsh config aliases `fd` to `fdfind`
+- Ubuntu installs the native bootstrap packages with `apt`
+- outside WSL, Ubuntu installs `snapd` if needed and uses `snap` for VS Code and Ghostty
+- most CLI tools and runtimes come from `mise`, not `apt`
 
 ## Arch Linux
 
@@ -117,6 +114,11 @@ cd ~/dotfiles
 ./scripts/bootstrap.sh
 ```
 
+Notes:
+
+- Arch installs the native bootstrap packages and GUI apps with `pacman`
+- most CLI tools and runtimes come from `mise`, not `pacman`
+
 ## Fedora
 
 Use a normal user with `sudo` access.
@@ -139,9 +141,10 @@ cd ~/dotfiles
 
 Notes:
 
-- Fedora installs the core system tools with `dnf`
-- `code` and `ghostty` are still best-effort and may require extra repos depending on the machine
-- bootstrap batches the Fedora core package install to avoid the slow per-package `dnf` loop
+- Fedora installs the native bootstrap packages with `dnf`
+- VS Code uses the official Microsoft RPM repository
+- Ghostty uses the Fedora COPR published by `scottames/ghostty`
+- most CLI tools and runtimes come from `mise`, not `dnf`
 
 ## Windows + WSL
 
@@ -168,7 +171,7 @@ cd ~/dotfiles
 ./scripts/bootstrap.sh
 ```
 
-Inside WSL, the bootstrap still attempts `ghostty` via `snap`, but it skips Linux VS Code so the Windows install can be used with Remote - WSL.
+Inside WSL, the bootstrap skips Linux GUI app installs so the Windows install can be used with Remote - WSL.
 
 ### Arch in WSL
 
@@ -191,7 +194,7 @@ cd ~/dotfiles
 ./scripts/bootstrap.sh
 ```
 
-On Arch in WSL, the bootstrap installs Linux `code` because the Arch path uses `pacman` directly. If you prefer the Windows VS Code client only, use Remote - WSL from the Windows install and ignore the Linux `code` binary.
+On Arch in WSL, the bootstrap also skips Linux GUI app installs so the Windows VS Code client can be used with Remote - WSL.
 
 ## Verify
 
@@ -224,8 +227,9 @@ main
 
 ## Notes
 
-- `ghostty` and `code` are best-effort native installs; bootstrap reports skipped or failed steps at the end
-- `mise install` manages `opencode`, `pi-agent`, and `agent-browser`, and any failures are listed at the end of the bootstrap report with the attempted command output
+- `ghostty` and `code` are best-effort OS-specific installs; bootstrap reports skipped or failed steps at the end
+- `mise` is installed with the official installer and prefers `/usr/local/bin/mise`; if that is not writable it falls back to `~/.local/bin/mise`
+- `mise install --raw` manages almost all non-GUI userland tools in this repo, and any failures are listed at the end of the bootstrap report with the attempted command output
 - native package manager commands now stream their logs live during bootstrap instead of buffering output until the end
 - `tmux` uses `tmux-256color` when available, falls back to `screen-256color`, and enables mouse support for scrolling and pane clicks
 - `tmux` uses TPM with `TMUX_PLUGIN_MANAGER_PATH` set to `~/.local/share/tmux/plugins/`
