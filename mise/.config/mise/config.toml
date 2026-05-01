@@ -1,6 +1,6 @@
 [tools]
 bat = "latest"
-btop = "latest"
+btop = "1.4.6"
 bun = "latest"
 delta = "latest"
 direnv = "latest"
@@ -15,7 +15,7 @@ node = "lts"
 opencode = "latest"
 "npm:agent-browser" = { version = "latest", depends = ["node"] }
 "npm:@mariozechner/pi-coding-agent" = { version = "latest", depends = ["node"] }
-pnpm = "latest"
+pnpm = "10.33.0"
 python = "latest"
 ripgrep = "latest"
 starship = "latest"
