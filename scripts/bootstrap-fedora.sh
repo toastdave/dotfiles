@@ -6,7 +6,7 @@ install_platform_packages() {
 
   run_shell "Refresh dnf metadata" "$SUDO dnf makecache"
 
-  install_dnf_packages "Install Fedora bootstrap packages" git curl stow zsh tmux unzip fontconfig
+  install_dnf_packages "Install Fedora bootstrap packages" git curl gh stow zsh tmux unzip fontconfig
 }
 
 install_platform_gui_apps() {

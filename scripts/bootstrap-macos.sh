@@ -4,7 +4,7 @@ install_platform_packages() {
     return 1
   fi
 
-  install_brew_formulas "Install macOS Homebrew bootstrap formulas" git curl stow zsh tmux
+  install_brew_formulas "Install macOS Homebrew bootstrap formulas" git curl gh stow zsh tmux
 }
 
 install_platform_gui_apps() {
