@@ -173,21 +173,26 @@ install_brew_cask() {
 install_brew_formulas() {
   local label=$1
   local package
-  local missing_packages=()
+  local status=0
   shift
 
   for package in "$@"; do
-    if ! brew list --formula "$package" >/dev/null 2>&1; then
-      missing_packages+=("$package")
+    if brew list --formula "$package" >/dev/null 2>&1; then
+      continue
+    fi
+
+    if ! install_brew_formula "$package"; then
+      status=1
     fi
   done
 
-  if [ "${#missing_packages[@]}" -eq 0 ]; then
+  if [ "$status" -eq 0 ]; then
     record_success "$label already satisfied"
-    return 0
+  else
+    record_warning "$label had one or more package warnings"
   fi
 
-  run_shell "$label" "brew install ${missing_packages[*]}"
+  return "$status"
 }
 
 install_apt_package() {
@@ -454,13 +459,15 @@ set_default_shell_to_zsh() {
 
   zsh_path=$(command -v zsh)
 
-  if have getent; then
+  if [ "$(uname -s)" = "Darwin" ] && have dscl; then
+    login_shell=$(dscl . -read "/Users/$USER" UserShell 2>/dev/null | awk '{print $2}' || true)
+  elif have getent; then
     passwd_entry=$(getent passwd "$USER" 2>/dev/null || true)
   elif [ -r /etc/passwd ]; then
     passwd_entry=$(grep "^$USER:" /etc/passwd 2>/dev/null || true)
   fi
 
-  if [ -n "$passwd_entry" ]; then
+  if [ -z "$login_shell" ] && [ -n "$passwd_entry" ]; then
     login_shell=${passwd_entry##*:}
   fi
 
@@ -487,16 +494,17 @@ set_default_shell_to_zsh() {
   fi
 
   passwd_entry=""
-  if have getent; then
+  login_shell=""
+  if [ "$(uname -s)" = "Darwin" ] && have dscl; then
+    login_shell=$(dscl . -read "/Users/$USER" UserShell 2>/dev/null | awk '{print $2}' || true)
+  elif have getent; then
     passwd_entry=$(getent passwd "$USER" 2>/dev/null || true)
   elif [ -r /etc/passwd ]; then
     passwd_entry=$(grep "^$USER:" /etc/passwd 2>/dev/null || true)
   fi
 
-  if [ -n "$passwd_entry" ]; then
+  if [ -z "$login_shell" ] && [ -n "$passwd_entry" ]; then
     login_shell=${passwd_entry##*:}
-  else
-    login_shell=""
   fi
 
   if [ "$login_shell" != "$zsh_path" ]; then
@@ -510,10 +518,32 @@ set_default_shell_to_zsh() {
   fi
 }
 
+backup_stow_conflicts() {
+  local package=$1
+  local source_path
+  local rel_path
+  local target_path
+  local backup_path
+  local timestamp
+
+  timestamp=$(date +%Y%m%d%H%M%S)
+
+  while IFS= read -r -d '' source_path; do
+    rel_path=${source_path#"$DOTFILES_DIR/$package/"}
+    target_path="$HOME/$rel_path"
+
+    if [ -e "$target_path" ] && [ ! -L "$target_path" ] && [ ! -d "$target_path" ]; then
+      backup_path="$target_path.bootstrap-backup-$timestamp"
+      run_shell "Backup existing $rel_path before stow" "mv \"$target_path\" \"$backup_path\""
+    fi
+  done < <(find "$DOTFILES_DIR/$package" -type f -print0)
+}
+
 stow_packages() {
   local package
   for package in "${PACKAGES[@]}"; do
     if [ -d "$DOTFILES_DIR/$package" ]; then
+      backup_stow_conflicts "$package"
       run_shell "Stow $package" "cd \"$DOTFILES_DIR\" && stow --target=\"$HOME\" --restow $package"
     else
       record_warning "Missing stow package: $package"
@@ -615,6 +645,8 @@ main() {
 }
 
 print_report() {
+  set +u
+
   log ""
   log "Bootstrap report"
   log "================"

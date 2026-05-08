@@ -1,11 +1,8 @@
 [tools]
 bat = "latest"
-btop = "1.4.6"
 bun = "latest"
-delta = "latest"
 direnv = "latest"
 eza = "latest"
-fd = "latest"
 fzf = "latest"
 go = "latest"
 jq = "latest"

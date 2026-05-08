@@ -10,9 +10,9 @@ Use the steps for your OS, then run the bootstrap:
 
 The bootstrap:
 
-- installs a small native bootstrap set including `curl`, `git`, `stow`, `zsh`, and `tmux`
+- installs a small native bootstrap set including `curl`, `git`, `stow`, `zsh`, `tmux`, and platform-native CLIs where needed
 - installs `mise` with the official installer and verifies the binary before using it later in the script
-- installs most CLIs and runtimes with `mise`, including `bat`, `btop`, `delta`, `direnv`, `eza`, `fd`, `fzf`, `jq`, `lazygit`, `neovim`, `opencode`, `ripgrep`, `starship`, `uv`, `zoxide`, `pi-agent`, and `agent-browser`
+- installs most CLIs and runtimes with `mise`, including `bat`, `direnv`, `eza`, `fzf`, `jq`, `lazygit`, `neovim`, `opencode`, `ripgrep`, `starship`, `uv`, `zoxide`, `pi-agent`, and `agent-browser`
 - installs GUI apps with the best available OS-specific path, including `ghostty` and VS Code where supported
 - sets the global Git default branch to `main`
 - tries to set Zsh as the default shell
