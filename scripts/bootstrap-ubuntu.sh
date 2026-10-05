@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 install_platform_packages() {
   if ! have apt-get; then
     record_warning "apt-get is not available"
@@ -6,7 +7,7 @@ install_platform_packages() {
 
   run_shell "Update apt package index" "$SUDO apt-get update"
 
-  install_apt_packages "Install Ubuntu bootstrap packages" git curl gh stow zsh tmux unzip fontconfig
+  install_apt_packages "Install Ubuntu bootstrap packages" git curl gh stow zsh tmux unzip fontconfig build-essential
 }
 
 install_platform_gui_apps() {

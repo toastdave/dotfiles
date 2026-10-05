@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 install_platform_packages() {
   if ! have brew; then
     record_warning "Homebrew is not installed"

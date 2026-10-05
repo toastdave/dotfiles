@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-set -u
+set -uo pipefail
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-DOTFILES_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+SCRIPT_DIR=$(CDPATH="" cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+DOTFILES_DIR=$(CDPATH="" cd -- "$SCRIPT_DIR/.." && pwd)
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 TMUX_PLUGIN_MANAGER_PATH="$XDG_DATA_HOME/tmux/plugins"
-IS_WSL=0
+export IS_WSL=0
 MISE_BIN=""
 
 export PATH="$HOME/.local/bin:$PATH"
@@ -18,7 +18,20 @@ COMMAND_FAILURE_LABELS=()
 COMMAND_FAILURE_COMMANDS=()
 COMMAND_FAILURE_OUTPUTS=()
 
-PACKAGES=(zsh starship mise ghostty opencode tmux)
+PACKAGES=(zsh starship mise ghostty opencode tmux git)
+HEADLESS=0
+SKIP_AI=0
+parse_args() {
+  for arg in "$@"; do
+    case "$arg" in
+      --headless) HEADLESS=1 ;;
+      --skip-ai) SKIP_AI=1 ;;
+      -h|--help) printf 'Usage: %s [--headless] [--skip-ai]\n' "$0"; exit 0 ;;
+      *) printf 'Unknown option: %s\n' "$arg" >&2; exit 2 ;;
+    esac
+  done
+}
+
 
 if [ "${EUID:-$(id -u)}" -eq 0 ]; then
   SUDO=""
@@ -94,7 +107,7 @@ run_live_command() {
   log_step "$label"
   log "    \$ $command"
 
-  bash -lc "$command" 2>&1 | tee "$output_file"
+  bash -o pipefail -c "$command" 2>&1 | tee "$output_file"
   status=${PIPESTATUS[0]}
   output=$(<"$output_file")
   rm -f "$output_file"
@@ -325,7 +338,7 @@ install_jetbrainsmono_nerd_font() {
     return 1
   fi
 
-  if ! run_shell "Install JetBrainsMono Nerd Font" "unzip -o -j \"$archive\" '*.ttf' '*.otf' -d \"$fonts_dir\""; then
+  if ! run_shell "Install JetBrainsMono Nerd Font" "unzip -o -j \"$archive\" '*.ttf' -d \"$fonts_dir\""; then
     rm -rf "$tmpdir"
     return 1
   fi
@@ -374,14 +387,8 @@ install_mise() {
     return 1
   fi
 
-  if [ -n "$SUDO" ] || [ "${EUID:-$(id -u)}" -eq 0 ] || [ -w /usr/local/bin ]; then
-    install_path="/usr/local/bin/mise"
-    install_dir="/usr/local/bin"
-    installer_prefix="$SUDO"
-  else
-    install_path="$HOME/.local/bin/mise"
-    install_dir="$HOME/.local/bin"
-  fi
+  install_path="$HOME/.local/bin/mise"
+  install_dir="$HOME/.local/bin"
 
   run_shell "Create mise install directory" "${installer_prefix:+$installer_prefix }mkdir -p \"$install_dir\""
   run_shell "Install mise with official installer" "curl -fsSL https://mise.run | ${installer_prefix:+$installer_prefix }env MISE_INSTALL_PATH=\"$install_path\" sh"
@@ -393,6 +400,51 @@ install_mise() {
 
   export PATH="${MISE_BIN%/*}:$PATH"
   run_shell "Verify mise installation" "\"$MISE_BIN\" --version"
+}
+
+install_agent_browser() {
+  # Chrome for Testing has no Linux ARM64 build; use the distro's Chromium.
+  if [ "$(uname -s)" = Linux ] && [[ "$(uname -m)" = aarch64 || "$(uname -m)" = arm64 ]]; then
+    case "${TARGET_SCRIPT##*/}" in
+      bootstrap-ubuntu.sh)
+        if apt-cache show chromium >/dev/null 2>&1; then
+          run_shell "Install system Chromium" "$SUDO apt-get install -y --no-install-recommends chromium" || return 1
+        else
+          run_shell "Install system Chromium" "$SUDO apt-get install -y --no-install-recommends chromium-browser" || return 1
+        fi ;;
+      bootstrap-fedora.sh) install_dnf_packages "Install system Chromium" chromium || return 1 ;;
+      bootstrap-arch.sh) install_pacman_packages "Install system Chromium" chromium || return 1 ;;
+    esac
+    local browser
+    browser=$(command -v chromium || command -v chromium-browser) || return 1
+    run_cmd "Configure agent-browser system runtime" "$MISE_BIN" -C "$HOME" exec -- node -e '
+      const fs=require("node:fs"),path=require("node:path"),os=require("node:os");
+      const p=path.join(os.homedir(),".agent-browser/config.json");
+      const config=fs.existsSync(p)?JSON.parse(fs.readFileSync(p,"utf8")):{};
+      config.executablePath=process.argv[1];
+      fs.mkdirSync(path.dirname(p),{recursive:true});
+      fs.writeFileSync(p,JSON.stringify(config,null,2)+"\n");' "$browser"
+    return $?
+  fi
+  local flags=()
+  if [ "${TARGET_SCRIPT##*/}" = bootstrap-ubuntu.sh ]; then
+    flags+=(--with-deps)
+  fi
+  run_cmd "Install agent-browser Chromium runtime" "$MISE_BIN" -C "$HOME" exec -- agent-browser install "${flags[@]}"
+}
+
+install_claude() {
+  if have claude; then
+    record_success "Claude Code already installed"
+    return 0
+  fi
+  local installer
+  installer=$(mktemp) || return 1
+  run_cmd "Download Claude Code native installer" curl -fsSL https://claude.ai/install.sh -o "$installer" || { rm -f "$installer"; return 1; }
+  run_cmd "Install Claude Code" bash "$installer" 2.1.289
+  local status=$?
+  rm -f "$installer"
+  [ "$status" -eq 0 ] && run_cmd "Verify Claude Code" "$HOME/.local/bin/claude" --version
 }
 
 ensure_sudo_access() {
@@ -415,12 +467,13 @@ set_git_default_branch() {
     return 1
   fi
 
-  run_shell "Set git default branch to main" "git config --global init.defaultBranch main"
+  run_cmd "Set git default branch to main" git config --global init.defaultBranch main || return 1
+  run_cmd "Set automatic Git upstreams" git config --global push.autoSetupRemote true
 }
 
 install_tpm() {
   local target="$TMUX_PLUGIN_MANAGER_PATH/tpm"
-  run_shell "Create tmux plugin directory" "mkdir -p \"$TMUX_PLUGIN_MANAGER_PATH\""
+  run_cmd "Create tmux plugin directory" mkdir -p "$TMUX_PLUGIN_MANAGER_PATH" || return 1
   if [ -d "$target" ]; then
     record_success "tmux plugin manager already present"
     return 0
@@ -431,24 +484,30 @@ install_tpm() {
 install_tmux_plugins() {
   local tpm_bin="$TMUX_PLUGIN_MANAGER_PATH/tpm/bin/install_plugins"
   local tmux_conf="$HOME/.config/tmux/tmux.conf"
-
-  if [ ! -x "$tpm_bin" ]; then
-    record_warning "tmux plugin manager install script is unavailable"
+  local server="dotfiles-bootstrap-$$"
+  local socket plugin status=0
+  [ -x "$tpm_bin" ] && [ -f "$tmux_conf" ] || {
+    record_warning "tmux configuration or TPM installer is unavailable"
     return 1
-  fi
-
-  if [ ! -f "$tmux_conf" ]; then
-    record_warning "tmux config not found at $tmux_conf"
-    return 1
-  fi
-
-  run_shell "Prime tmux plugin manager path" "tmux start-server \; source-file \"$tmux_conf\" \; set-environment -g TMUX_PLUGIN_MANAGER_PATH \"$TMUX_PLUGIN_MANAGER_PATH\""
-
-  run_shell "Install tmux plugins" "TMUX_PLUGIN_MANAGER_PATH=\"$TMUX_PLUGIN_MANAGER_PATH\" \"$tpm_bin\""
+  }
+  # A live isolated session lets TPM query options on a fresh machine.
+  run_cmd "Start isolated tmux bootstrap server" tmux -L "$server" -f "$tmux_conf" new-session -d -s bootstrap || return 1
+  socket=$(tmux -L "$server" display-message -p '#{socket_path}')
+  run_cmd "Install tmux plugins" env TMUX="$socket,0,0" TMUX_PLUGIN_MANAGER_PATH="$TMUX_PLUGIN_MANAGER_PATH" "$tpm_bin" || status=1
+  tmux -L "$server" kill-server >/dev/null 2>&1 || true
+  while IFS= read -r plugin; do
+    if [ ! -d "$TMUX_PLUGIN_MANAGER_PATH/${plugin##*/}/.git" ]; then
+      record_warning "Declared tmux plugin missing: $plugin"
+      status=1
+    fi
+  done < <(sed -n "s/^set -g @plugin '\(.*\)'$/\1/p" "$tmux_conf")
+  return "$status"
 }
 
 set_default_shell_to_zsh() {
   local zsh_path
+  local login_user
+  login_user=$(id -un)
   local login_shell=""
   local passwd_entry=""
 
@@ -460,11 +519,11 @@ set_default_shell_to_zsh() {
   zsh_path=$(command -v zsh)
 
   if [ "$(uname -s)" = "Darwin" ] && have dscl; then
-    login_shell=$(dscl . -read "/Users/$USER" UserShell 2>/dev/null | awk '{print $2}' || true)
+    login_shell=$(dscl . -read "/Users/$login_user" UserShell 2>/dev/null | awk '{print $2}' || true)
   elif have getent; then
-    passwd_entry=$(getent passwd "$USER" 2>/dev/null || true)
+    passwd_entry=$(getent passwd "$login_user" 2>/dev/null || true)
   elif [ -r /etc/passwd ]; then
-    passwd_entry=$(grep "^$USER:" /etc/passwd 2>/dev/null || true)
+    passwd_entry=$(grep "^$login_user:" /etc/passwd 2>/dev/null || true)
   fi
 
   if [ -z "$login_shell" ] && [ -n "$passwd_entry" ]; then
@@ -485,22 +544,28 @@ set_default_shell_to_zsh() {
   fi
 
   if [ -r /etc/shells ] && ! grep -qx "$zsh_path" /etc/shells; then
-    record_warning "$zsh_path is not listed in /etc/shells"
-    return 1
+    if [ -x /bin/zsh ] && grep -qx /bin/zsh /etc/shells; then
+      zsh_path=/bin/zsh
+    else
+      record_warning "$zsh_path is not listed in /etc/shells"
+      return 1
+    fi
   fi
 
-  if ! run_shell "Set zsh as default shell" "chsh -s \"$zsh_path\" \"$USER\""; then
-    return 1
+  if [ -n "$SUDO" ]; then
+    run_cmd "Set zsh as default shell" "$SUDO" chsh -s "$zsh_path" "$login_user" || return 1
+  else
+    run_cmd "Set zsh as default shell" chsh -s "$zsh_path" "$login_user" || return 1
   fi
 
   passwd_entry=""
   login_shell=""
   if [ "$(uname -s)" = "Darwin" ] && have dscl; then
-    login_shell=$(dscl . -read "/Users/$USER" UserShell 2>/dev/null | awk '{print $2}' || true)
+    login_shell=$(dscl . -read "/Users/$login_user" UserShell 2>/dev/null | awk '{print $2}' || true)
   elif have getent; then
-    passwd_entry=$(getent passwd "$USER" 2>/dev/null || true)
+    passwd_entry=$(getent passwd "$login_user" 2>/dev/null || true)
   elif [ -r /etc/passwd ]; then
-    passwd_entry=$(grep "^$USER:" /etc/passwd 2>/dev/null || true)
+    passwd_entry=$(grep "^$login_user:" /etc/passwd 2>/dev/null || true)
   fi
 
   if [ -z "$login_shell" ] && [ -n "$passwd_entry" ]; then
@@ -520,35 +585,36 @@ set_default_shell_to_zsh() {
 
 backup_stow_conflicts() {
   local package=$1
-  local source_path
-  local rel_path
-  local target_path
-  local backup_path
+  local source_path rel_path target_path backup_path
   local timestamp
-
-  timestamp=$(date +%Y%m%d%H%M%S)
-
-  while IFS= read -r -d '' source_path; do
-    rel_path=${source_path#"$DOTFILES_DIR/$package/"}
+  timestamp=$(date +%Y%m%d%H%M%S)-$$
+  # Only managed files: never adopt runtime files written through folded links.
+  while IFS= read -r -d '' rel_path; do
+    source_path="$DOTFILES_DIR/$rel_path"
+    rel_path=${rel_path#"$package/"}
+    [ "$rel_path" = .stow-local-ignore ] && continue
     target_path="$HOME/$rel_path"
-
-    if [ -e "$target_path" ] && [ ! -L "$target_path" ] && [ ! -d "$target_path" ]; then
+    [ "$source_path" -ef "$target_path" ] && continue
+    if [ -e "$target_path" ] || [ -L "$target_path" ]; then
       backup_path="$target_path.bootstrap-backup-$timestamp"
-      run_shell "Backup existing $rel_path before stow" "mv \"$target_path\" \"$backup_path\""
+      run_cmd "Backup existing $rel_path before stow" mv "$target_path" "$backup_path" || return 1
     fi
-  done < <(find "$DOTFILES_DIR/$package" -type f -print0)
+  done < <(git -C "$DOTFILES_DIR" ls-files -z --cached --others --exclude-standard -- "$package")
 }
 
 stow_packages() {
   local package
+  local status=0
   for package in "${PACKAGES[@]}"; do
     if [ -d "$DOTFILES_DIR/$package" ]; then
-      backup_stow_conflicts "$package"
-      run_shell "Stow $package" "cd \"$DOTFILES_DIR\" && stow --target=\"$HOME\" --restow $package"
+      backup_stow_conflicts "$package" || { status=1; continue; }
+      run_cmd "Stow $package" stow --dir="$DOTFILES_DIR" --no-folding --target="$HOME" --restow "$package" || status=1
     else
       record_warning "Missing stow package: $package"
+      status=1
     fi
   done
+  return "$status"
 }
 
 run_mise_install() {
@@ -557,7 +623,17 @@ run_mise_install() {
     return 1
   fi
   export PATH="${MISE_BIN%/*}:$PATH"
-  run_shell "Install mise-managed tools" "\"$MISE_BIN\" install --raw"
+  run_cmd "Trust canonical mise config" "$MISE_BIN" trust "$DOTFILES_DIR/mise/.config/mise/config.toml" || return 1
+  local github_token=""
+  if have gh; then
+    github_token=$(gh auth token 2>/dev/null) || true
+  fi
+  # Pass existing GitHub auth only in the child environment, never command logs.
+  if [ -n "$github_token" ]; then
+    GH_TOKEN="$github_token" run_cmd "Install mise-managed tools" env MISE_GLOBAL_CONFIG_FILE="$DOTFILES_DIR/mise/.config/mise/config.toml" "$MISE_BIN" -C "$HOME" install --jobs 4
+  else
+    run_cmd "Install mise-managed tools" env MISE_GLOBAL_CONFIG_FILE="$DOTFILES_DIR/mise/.config/mise/config.toml" "$MISE_BIN" -C "$HOME" install --jobs 4
+  fi
 }
 
 install_platform_gui_apps() {
@@ -567,10 +643,10 @@ install_platform_gui_apps() {
 report_path_setup() {
   case ":$PATH:" in
     *":$HOME/.local/bin:"*)
-      record_success "~/.local/bin already on PATH"
+      record_success "$HOME/.local/bin already on PATH"
       ;;
     *)
-      record_warning "~/.local/bin is not on PATH; add it if fallback installers use it"
+      record_warning "$HOME/.local/bin is not on PATH; add it if fallback installers use it"
       ;;
   esac
 }
@@ -613,17 +689,32 @@ detect_platform() {
   return 1
 }
 
+required_step() {
+  local label=$1
+  shift
+  if ! "$@"; then
+    record_failure "$label"
+    return 1
+  fi
+}
+
 main() {
+  parse_args "$@"
+
+  if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+    printf 'Run bootstrap as your normal user, with sudo access.\n' >&2
+    return 1
+  fi
   if ! detect_platform; then
     record_failure "Unsupported platform: $(uname -s)"
     print_report
-    exit 0
+    exit 1
   fi
 
   if [ ! -f "$TARGET_SCRIPT" ]; then
     record_failure "Missing platform script: $TARGET_SCRIPT"
     print_report
-    exit 0
+    exit 1
   fi
 
   # shellcheck source=/dev/null
@@ -631,17 +722,25 @@ main() {
 
   report_path_setup
   ensure_sudo_access
-  install_platform_packages
-  install_mise
-  install_jetbrainsmono_nerd_font
-  install_platform_gui_apps
-  set_git_default_branch
+  required_step "Native bootstrap packages" install_platform_packages || { print_report; return 1; }
+  required_step "mise installation" install_mise || { print_report; return 1; }
+  if [ "$HEADLESS" -eq 0 ]; then
+    install_jetbrainsmono_nerd_font
+    install_platform_gui_apps
+  fi
+  required_step "Git defaults" set_git_default_branch
   set_default_shell_to_zsh
-  stow_packages
-  install_tpm
-  install_tmux_plugins
-  run_mise_install
+  required_step "Stow packages" stow_packages || { print_report; return 1; }
+  required_step "mise tools" run_mise_install || { print_report; return 1; }
+  required_step "TPM installation" install_tpm
+  required_step "tmux plugin installation" install_tmux_plugins
+  required_step "Claude Code installation" install_claude
+  required_step "Browser automation runtime" install_agent_browser
+  if [ "$SKIP_AI" -eq 0 ]; then
+    required_step "AI skills (private repo requires GitHub authentication)" run_cmd "Restore AI skills" "$MISE_BIN" exec -- node "$SCRIPT_DIR/setup-ai.mjs"
+  fi
   print_report
+  [ "${#FAILED_ITEMS[@]}" -eq 0 ]
 }
 
 print_report() {
@@ -679,4 +778,6 @@ print_report() {
   done
 }
 
-main "$@"
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  main "$@"
+fi

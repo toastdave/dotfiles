@@ -1,0 +1,240 @@
+{
+  "skillsCliVersion": "1.7.0",
+  "personalRepository": "https://github.com/nyyx-io/skills.git",
+  "vendors": [
+    {
+      "source": "anthropics/skills",
+      "skills": [
+        "frontend-design",
+        "skill-creator"
+      ],
+      "ref": "683bc88e56f3e09ba94f7055977f3d3aa499f202"
+    },
+    {
+      "source": "better-auth/skills",
+      "skills": [
+        "better-auth-best-practices"
+      ],
+      "ref": "20c9e88a5c007461a703f1c213572b073196113e"
+    },
+    {
+      "source": "cloudflare/skills",
+      "skills": [
+        "agents-sdk",
+        "cloudflare",
+        "cloudflare-email-service",
+        "durable-objects",
+        "web-perf",
+        "workers-best-practices",
+        "wrangler"
+      ],
+      "ref": "41e0d19858946d18af9ee2c2feebbe2e11d829ff"
+    },
+    {
+      "source": "coreyhaines31/marketingskills",
+      "skills": [
+        "copywriting",
+        "seo-audit",
+        "social"
+      ],
+      "ref": "dda3841f0b294e01e93b1541486beefbfab0915e"
+    },
+    {
+      "source": "diffusionstudio/lottie",
+      "skills": [
+        "text-to-lottie"
+      ],
+      "ref": "3c72912fad543897f90045ed4d355813837927fc"
+    },
+    {
+      "source": "diffusionstudio/skills",
+      "skills": [
+        "editor",
+        "watch"
+      ],
+      "ref": "ab7e13b088148474f16bc180f84d7cb3374085ef"
+    },
+    {
+      "source": "expo/skills",
+      "skills": [
+        "eas-app-stores",
+        "eas-hosting",
+        "eas-observe",
+        "eas-simulator",
+        "eas-update-insights",
+        "eas-workflows",
+        "expo-app-clip",
+        "expo-brownfield",
+        "expo-data-fetching",
+        "expo-dev-client",
+        "expo-dom",
+        "expo-examples",
+        "expo-module",
+        "expo-native-ui",
+        "expo-router",
+        "expo-skill-eval",
+        "expo-tailwind-setup",
+        "expo-ui",
+        "expo-upgrade",
+        "expo-web-to-native"
+      ],
+      "ref": "50f59f837ddb7595d8c6683c693207e265d58c43"
+    },
+    {
+      "source": "fallow-rs/fallow-skills",
+      "skills": [
+        "fallow"
+      ],
+      "ref": "77433cdd7c804d7caf6f172a8dfbd4f75a869f53"
+    },
+    {
+      "source": "github/awesome-copilot",
+      "skills": [
+        "postgresql-optimization"
+      ],
+      "ref": "143a3d976b3c1603cc8932984d5e1f28501cb5fc"
+    },
+    {
+      "source": "greensock/gsap-skills",
+      "skills": [
+        "gsap-core"
+      ],
+      "ref": "aed9cfd3277740755f6bfc1155c7aa645403b760"
+    },
+    {
+      "source": "juliusbrussee/caveman",
+      "skills": [
+        "caveman"
+      ],
+      "ref": "6571943370f7c9d4de1946481177ee7b306cd8e8"
+    },
+    {
+      "source": "lottiefiles/motion-design-skill",
+      "skills": [
+        "motion-design"
+      ],
+      "ref": "f9a8a041b85185ee4881b3471d3415e939aac772"
+    },
+    {
+      "source": "mattpocock/skills",
+      "skills": [
+        "grill-me",
+        "grill-with-docs",
+        "improve-codebase-architecture",
+        "tdd",
+        "triage"
+      ],
+      "ref": "4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d"
+    },
+    {
+      "source": "neondatabase/agent-skills",
+      "skills": [
+        "neon",
+        "neon-postgres"
+      ],
+      "ref": "9e4a5705922fddb540c396111a7979e0dca79cc2"
+    },
+    {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "skills": [
+        "ui-ux-pro-max"
+      ],
+      "ref": "477bcb28c9812b385cb51a4605ddf30d7b2266e2"
+    },
+    {
+      "source": "obra/superpowers",
+      "skills": [
+        "using-git-worktrees"
+      ],
+      "ref": "8ca22dba9a94f28898bbce59f2537ff4d87c747d"
+    },
+    {
+      "source": "pbakaus/impeccable",
+      "skills": [
+        "impeccable"
+      ],
+      "ref": "961dd8479ed05461b2619444e3c5da6ffec700fb"
+    },
+    {
+      "source": "planetscale/database-skills",
+      "skills": [
+        "postgres"
+      ],
+      "ref": "73b20b7eb64716d8c7100c054f0677c0c6e77e30"
+    },
+    {
+      "source": "pulumi/agent-skills",
+      "skills": [
+        "pulumi-best-practices"
+      ],
+      "ref": "f810e5000b5881ec41ea9c33c001ac8c25cbd2f2"
+    },
+    {
+      "source": "shadcn/ui",
+      "skills": [
+        "shadcn"
+      ],
+      "ref": "0e3abd65a97707f4a9cc3ed07bf5006e1cb67b13"
+    },
+    {
+      "source": "stripe/ai",
+      "skills": [
+        "stripe-best-practices"
+      ],
+      "ref": "c40002aa6047acaa72e290cdbb22d9b77739d798"
+    },
+    {
+      "source": "supabase/agent-skills",
+      "skills": [
+        "supabase-postgres-best-practices"
+      ],
+      "ref": "c9be0e931b7930f7d02126d04774d904c381e7d7"
+    },
+    {
+      "source": "sveltejs/ai-tools",
+      "skills": [
+        "svelte-code-writer",
+        "svelte-core-bestpractices"
+      ],
+      "ref": "6b5d0dab3c9c083387247ab20dc684573481076b"
+    },
+    {
+      "source": "vercel-labs/agent-browser",
+      "skills": [
+        "agent-browser"
+      ],
+      "ref": "526157cfd4ec64f45939f9ba0f10d5936aa7ac33"
+    },
+    {
+      "source": "vercel-labs/agent-skills",
+      "skills": [
+        "vercel-react-best-practices",
+        "vercel-react-native-skills",
+        "web-design-guidelines"
+      ],
+      "ref": "063bee94c3f4df8453406c830b0a7df0f2860278"
+    },
+    {
+      "source": "vercel-labs/skills",
+      "skills": [
+        "find-skills"
+      ],
+      "ref": "14cf84aa922cccc7e5b11fee5af9a01b3750fddf"
+    },
+    {
+      "source": "workos/skills",
+      "skills": [
+        "workos",
+        "workos-widgets"
+      ],
+      "ref": "d56befc0596bd48ea091082f17a6e7d25bb0aa21"
+    },
+    {
+      "source": "cloudflare/skills",
+      "ref": "d3113039790f64e052ff80f351190da65e9b7510",
+      "skills": [
+        "sandbox-sdk"
+      ]
+    }
+  ]
+}

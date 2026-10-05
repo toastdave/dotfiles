@@ -1,0 +1,104 @@
+{
+  "note": "Plugin preferences captured from ~/.codex/config.toml and Claude settings. App-installed inventory can differ; reinstall supported enabled plugins through the app.",
+  "codex": [
+    {
+      "id": "attio@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "browser@openai-bundled",
+      "enabled": true
+    },
+    {
+      "id": "build-ios-apps@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "chrome@openai-bundled",
+      "enabled": true
+    },
+    {
+      "id": "cloudflare@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "codex-app-tools@openai-bundled",
+      "enabled": true
+    },
+    {
+      "id": "codex-security@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "computer-use@openai-bundled",
+      "enabled": true
+    },
+    {
+      "id": "documents@openai-primary-runtime",
+      "enabled": true
+    },
+    {
+      "id": "expo@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "figma@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "github@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "hyperframes@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "neon-postgres@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "notion@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "pdf@openai-primary-runtime",
+      "enabled": true
+    },
+    {
+      "id": "presentations@openai-primary-runtime",
+      "enabled": true
+    },
+    {
+      "id": "spreadsheets@openai-primary-runtime",
+      "enabled": true
+    },
+    {
+      "id": "stripe@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "superpowers@openai-curated",
+      "enabled": true
+    },
+    {
+      "id": "template-creator@openai-primary-runtime",
+      "enabled": true
+    },
+    {
+      "id": "unified-computer-use@openai-bundled",
+      "enabled": true
+    },
+    {
+      "id": "visualize@openai-bundled",
+      "enabled": true
+    },
+    {
+      "id": "code-review@openai-bundled",
+      "enabled": true
+    }
+  ],
+  "claude": {
+    "figma@claude-plugins-official": true
+  }
+}

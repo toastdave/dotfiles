@@ -1,1 +1,10 @@
+.DS_Store
+*.bootstrap-backup-*
+*.local
+*.local.*
+opencode/.config/opencode/node_modules/
+opencode/.config/opencode/skills/
+opencode/.config/opencode/bun.lock*
+opencode/.config/opencode/package-lock.json
 tmux/.config/tmux/plugins/
+opencode/.config/opencode/package.json

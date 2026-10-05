@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 install_platform_packages() {
   if ! have dnf; then
     record_warning "dnf is not available"
@@ -6,7 +7,7 @@ install_platform_packages() {
 
   run_shell "Refresh dnf metadata" "$SUDO dnf makecache"
 
-  install_dnf_packages "Install Fedora bootstrap packages" git curl gh stow zsh tmux unzip fontconfig
+  install_dnf_packages "Install Fedora bootstrap packages" git curl gh stow zsh tmux unzip fontconfig gcc make nss cups-libs libdrm mesa-libgbm alsa-lib gtk3
 }
 
 install_platform_gui_apps() {

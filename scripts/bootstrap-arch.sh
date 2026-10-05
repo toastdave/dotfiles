@@ -1,10 +1,11 @@
+#!/usr/bin/env bash
 install_platform_packages() {
   if ! have pacman; then
     record_warning "pacman is not available"
     return 1
   fi
 
-  install_pacman_packages "Install Arch bootstrap packages" git curl github-cli stow zsh tmux unzip fontconfig
+  install_pacman_packages "Install Arch bootstrap packages" git curl github-cli stow zsh tmux unzip fontconfig gcc make nss libcups libdrm mesa alsa-lib gtk3
 }
 
 install_platform_gui_apps() {
