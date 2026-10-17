@@ -87,7 +87,8 @@ Plugin preferences from `~/.codex/config.toml` and Claude settings are captured 
 
 - Edit linked configuration in this repository, and edit personal skills in their repository.
 - Commit and push both repositories after reviewing their changes. Runtime caches, logs, credentials, and installed vendor copies stay out of Git.
-- Most mise tools intentionally use `latest`/`lts`; Bun, pnpm, Linux convenience binaries, Codex, and Pi are pinned. This restores the declared setup, not a byte-identical copy of every tool. Use project mise configs/lockfiles for project reproducibility.
+- Most mise tools, including Codex CLI, intentionally use `latest`/`lts`; Bun, pnpm, Pi, Jujutsu, Rust, Erlang/Elixir, and Linux convenience binaries are pinned. This restores the declared setup, not a byte-identical copy of every tool. Use project mise configs/lockfiles for project reproducibility.
+- Update Codex CLI with `mise upgrade npm:@openai/codex`; declaring `latest` does not install updates automatically.
 - Update vendor commit refs and skill names in `ai/skills.json` deliberately, then exercise restoration in a disposable home. Vendor revisions can rename skills; the script fails if a declared skill was not installed.
 - `mise self-update` updates mise itself. Then `mise upgrade` updates rolling global tools. Claude's native installation updates through its own updater; an existing Homebrew installation stays Homebrew-managed.
 - Run `mise exec -- node scripts/doctor.mjs` after changes. It checks runtime availability, declarations, canonical configuration links, and skill links. It does not prove authentication or a mobile build.

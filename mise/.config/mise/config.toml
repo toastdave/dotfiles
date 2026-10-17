@@ -24,7 +24,7 @@ turbo = "latest"
 btop = { version = "1.4.7", os = ["linux"] }
 delta = { version = "0.18.2", os = ["linux"] }
 fd = { version = "10.4.2", os = ["linux"] }
-"npm:@openai/codex" = { version = "0.160.1", depends = ["node"] }
+"npm:@openai/codex" = { version = "latest", depends = ["node"] }
 jj = "0.45.1"
 erlang = "29.1.1"
 elixir = "1.20.4-otp-29"
