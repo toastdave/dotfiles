@@ -1,0 +1,35 @@
+name: Validate setup
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  configuration:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: scripts/package-lock.json
+      - name: Install Stow
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            sudo apt-get update
+            sudo apt-get install -y stow
+          else
+            brew install stow
+          fi
+      - run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
+      - run: npm test --prefix scripts
+      - run: bash tests/stow.sh
+      - name: Syntax and whitespace
+        shell: bash
+        run: |
+          for script in scripts/*.sh tests/*.sh omarchy/bashrc; do bash -n "$script"; done
+          for script in scripts/*.mjs scripts/lib/*.mjs; do node --check "$script"; done
+          git diff --check

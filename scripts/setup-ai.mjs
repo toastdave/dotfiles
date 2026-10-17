@@ -11,12 +11,15 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const home = homedir();
 const manifest = JSON.parse(readFileSync(join(root, 'ai/skills.json'), 'utf8'));
 const args = new Set(process.argv.slice(2));
-const valid = ['--link-existing', '--vendors-only', '--resume'];
+const merge = args.has('--merge') || (existsSync(join(home, '.bashrc')) &&
+  readFileSync(join(home, '.bashrc'), 'utf8').includes('# >>> dotfiles omarchy >>>'));
+const valid = ['--link-existing', '--vendors-only', '--resume', '--merge'];
 if ([...args].some(x => !valid.includes(x))) {
   console.error(`Usage: node scripts/setup-ai.mjs [${valid.join(' | ')}]`);
   process.exit(2);
 }
 const run = (command, argv, options = {}) => execFileSync(command, argv, { stdio: 'inherit', ...options });
+let readSettings = path => JSON.parse(readFileSync(path, 'utf8'));
 const backupRoot = join(home, '.local/state/dotfiles/backups', `${Date.now()}-${process.pid}`);
 function present(path) { try { lstatSync(path); return true; } catch { return false; } }
 function backup(path) {
@@ -38,6 +41,16 @@ function link(source, destination) {
 }
 
 try {
+  // Omarchy retains its own instructions, themes and client settings.
+  if (merge && !args.has('--vendors-only')) {
+    const { ConfigPlan, readJson } = await import('./lib/config.mjs');
+    readSettings = path => readJson(path).value;
+    const { configureClients, configureInstructions } = await import('./setup-omarchy.mjs');
+    const plan = new ConfigPlan(home);
+    configureClients(plan);
+    configureInstructions(plan);
+    plan.apply();
+  }
   const canonical = join(home, '.agents/skills');
   const targets = ['.claude/skills', '.codex/skills', '.config/opencode/skills', '.pi/agent/skills'];
   let personal;
@@ -61,6 +74,14 @@ try {
         }
       }
       console.log(`\nRestore ${vendor.source}@${vendor.ref}`);
+      if (merge) for (const name of vendor.skills) {
+        const source = join(canonical, name);
+        if (existsSync(source)) {
+          const destination = join(backupRoot, '.agents/skills', name);
+          mkdirSync(dirname(destination), { recursive: true });
+          cpSync(source, destination, { recursive: true, dereference: true });
+        }
+      }
       run('npx', ['--yes', `skills@${manifest.skillsCliVersion}`, 'add',
         `https://github.com/${vendor.source}/tree/${vendor.ref}`, '--global',
         '--skill', ...vendor.skills, '--agent', 'codex', 'claude-code', 'opencode', '--yes']);
@@ -93,10 +114,12 @@ try {
       const source = join(personal, 'skills', name);
       for (const target of ['.agents/skills', ...targets]) link(source, join(home, target, name));
     }
-    link(join(root, 'ai/.agents/AGENTS.md'), join(home, '.agents/AGENTS.md'));
-    link(join(home, '.agents/AGENTS.md'), join(home, '.codex/AGENTS.md'));
-    link(join(home, '.agents/AGENTS.md'), join(home, '.pi/agent/AGENTS.md'));
-    link(join(root, 'ai/.claude/CLAUDE.md'), join(home, '.claude/CLAUDE.md'));
+    if (!merge) {
+      link(join(root, 'ai/.agents/AGENTS.md'), join(home, '.agents/AGENTS.md'));
+      link(join(home, '.agents/AGENTS.md'), join(home, '.codex/AGENTS.md'));
+      link(join(home, '.agents/AGENTS.md'), join(home, '.pi/agent/AGENTS.md'));
+      link(join(root, 'ai/.claude/CLAUDE.md'), join(home, '.claude/CLAUDE.md'));
+    }
   }
   if (!args.has('--vendors-only')) {
     const pi = join(home, '.pi/agent');
@@ -109,10 +132,12 @@ try {
     if (!args.has('--link-existing')) {
       const settings = JSON.parse(readFileSync(join(root, 'ai/pi/settings.json'), 'utf8'));
       for (const source of settings.packages) {
-        const [name, version] = source.slice(4).split('@');
+        const match = source.match(/^npm:(.+)@([^@]+)$/);
+        if (!match) throw new Error(`Expected a pinned npm Pi extension: ${source}`);
+        const [, name, version] = match;
         const pkg = join(pi, 'npm/node_modules', name, 'package.json');
-        const local = JSON.parse(readFileSync(join(pi, 'settings.json'), 'utf8'));
-        if (existsSync(pkg) && JSON.parse(readFileSync(pkg, 'utf8')).version === version && local.packages?.includes(source)) continue;
+        const local = readSettings(join(pi, 'settings.json'));
+        if (existsSync(pkg) && JSON.parse(readFileSync(pkg, 'utf8')).version === version && local.packages?.some(p => (typeof p === 'string' ? p : p.source) === source)) continue;
         run('pi', ['install', source]);
       }
     }

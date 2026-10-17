@@ -21,12 +21,14 @@ COMMAND_FAILURE_OUTPUTS=()
 PACKAGES=(zsh starship mise ghostty opencode tmux git)
 HEADLESS=0
 SKIP_AI=0
+OMARCHY=0
 parse_args() {
   for arg in "$@"; do
     case "$arg" in
       --headless) HEADLESS=1 ;;
       --skip-ai) SKIP_AI=1 ;;
-      -h|--help) printf 'Usage: %s [--headless] [--skip-ai]\n' "$0"; exit 0 ;;
+      --omarchy) OMARCHY=1 ;;
+      -h|--help) printf 'Usage: %s [--headless] [--skip-ai] [--omarchy]\n' "$0"; exit 0 ;;
       *) printf 'Unknown option: %s\n' "$arg" >&2; exit 2 ;;
     esac
   done
@@ -689,6 +691,13 @@ detect_platform() {
   return 1
 }
 
+is_omarchy() {
+  [ "$(uname -s)" = Linux ] && {
+    [ -f /usr/share/omarchy/default/bash/rc ] ||
+      [ -f "${OMARCHY_PATH:-$HOME/.local/share/omarchy}/default/bash/rc" ]
+  }
+}
+
 required_step() {
   local label=$1
   shift
@@ -704,6 +713,13 @@ main() {
   if [ "${EUID:-$(id -u)}" -eq 0 ]; then
     printf 'Run bootstrap as your normal user, with sudo access.\n' >&2
     return 1
+  fi
+  # Omarchy owns its desktop, shell and agent launchers. Never apply the generic
+  # Stow/chsh path over an existing Omarchy install, even without --omarchy.
+  if [ "$OMARCHY" -eq 1 ] || is_omarchy; then
+    . "$SCRIPT_DIR/bootstrap-omarchy.sh"
+    bootstrap_omarchy
+    return $?
   fi
   if ! detect_platform; then
     record_failure "Unsupported platform: $(uname -s)"

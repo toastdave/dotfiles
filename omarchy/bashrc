@@ -1,0 +1,21 @@
+# shellcheck shell=bash
+# Loaded after Omarchy's Bash defaults. Leave its prompt, completion and PATH hooks in charge.
+if ! alias gw >/dev/null 2>&1 && ! type gw >/dev/null 2>&1; then
+  alias gw='git worktree'
+fi
+if ! alias yolo >/dev/null 2>&1 && ! type yolo >/dev/null 2>&1 && command -v claude >/dev/null 2>&1; then
+  alias yolo='claude --dangerously-skip-permissions'
+fi
+
+export ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+for dotfiles_sdk_bin in "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" "$ANDROID_HOME/cmdline-tools/latest/bin"; do
+  if [[ -d "$dotfiles_sdk_bin" ]]; then
+    case ":$PATH:" in
+      *":$dotfiles_sdk_bin:"*) ;;
+      *) PATH="$PATH:$dotfiles_sdk_bin" ;;
+    esac
+  fi
+done
+export PATH
+unset dotfiles_sdk_bin
