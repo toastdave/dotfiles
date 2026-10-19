@@ -8,6 +8,6 @@
     "jsonc-parser": "3.3.1"
   },
   "scripts": {
-    "test": "node --test ../tests/omarchy.test.mjs"
+    "test": "node --test ../tests/omarchy.test.mjs ../tests/skills-restore.test.mjs"
   }
 }

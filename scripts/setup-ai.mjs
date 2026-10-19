@@ -6,6 +6,7 @@ import { dirname, join, resolve, relative } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { skillLockPath } from './lib/skills.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const home = homedir();
@@ -21,6 +22,7 @@ if ([...args].some(x => !valid.includes(x))) {
 const run = (command, argv, options = {}) => execFileSync(command, argv, { stdio: 'inherit', ...options });
 let readSettings = path => JSON.parse(readFileSync(path, 'utf8'));
 const backupRoot = join(home, '.local/state/dotfiles/backups', `${Date.now()}-${process.pid}`);
+const lockPath = skillLockPath(home);
 function present(path) { try { lstatSync(path); return true; } catch { return false; } }
 function backup(path) {
   let destination = join(backupRoot, relative(home, path));
@@ -53,6 +55,9 @@ try {
   }
   const canonical = join(home, '.agents/skills');
   const targets = ['.claude/skills', '.codex/skills', '.config/opencode/skills', '.pi/agent/skills'];
+  const linkSkill = name => {
+    for (const target of targets) link(join(canonical, name), join(home, target, name));
+  };
   let personal;
   if (!args.has('--vendors-only')) {
     personal = process.env.PERSONAL_SKILLS_DIR || join(home, 'code/projects/skills');
@@ -62,14 +67,27 @@ try {
     }
     // Existing checkout is authoritative; never reset, pull over edits, or change branches.
     if (!existsSync(join(personal, 'install'))) throw new Error(`Not a personal-skills checkout: ${personal}`);
+    // Custom skills must not wait for every upstream download to succeed.
+    const names = readdirSync(join(personal, 'skills')).filter(name => existsSync(join(personal, 'skills', name, 'SKILL.md')));
+    for (const name of names) {
+      const source = join(personal, 'skills', name);
+      for (const target of ['.agents/skills', ...targets]) link(source, join(home, target, name));
+    }
+    if (!merge) {
+      link(join(root, 'ai/.agents/AGENTS.md'), join(home, '.agents/AGENTS.md'));
+      link(join(home, '.agents/AGENTS.md'), join(home, '.codex/AGENTS.md'));
+      link(join(home, '.agents/AGENTS.md'), join(home, '.pi/agent/AGENTS.md'));
+      link(join(root, 'ai/.claude/CLAUDE.md'), join(home, '.claude/CLAUDE.md'));
+    }
+    console.log(`Linked ${names.length} personal skills from ${personal}`);
   }
   if (!args.has('--link-existing')) {
     for (const vendor of manifest.vendors) {
       if (args.has('--resume')) {
-        const lockPath = join(home, '.agents/.skill-lock.json');
         const lock = existsSync(lockPath) ? JSON.parse(readFileSync(lockPath, 'utf8')).skills : {};
         if (vendor.skills.every(name => lock[name]?.source === vendor.source && lock[name]?.ref === vendor.ref && existsSync(join(canonical, name, 'SKILL.md')))) {
           console.log(`Already restored ${vendor.source}@${vendor.ref}`);
+          for (const name of vendor.skills) linkSkill(name);
           continue;
         }
       }
@@ -85,40 +103,28 @@ try {
       run('npx', ['--yes', `skills@${manifest.skillsCliVersion}`, 'add',
         `https://github.com/${vendor.source}/tree/${vendor.ref}`, '--global',
         '--skill', ...vendor.skills, '--agent', 'codex', 'claude-code', 'opencode', '--yes']);
-      const restored = JSON.parse(readFileSync(join(home, '.agents/.skill-lock.json'), 'utf8')).skills;
+      if (!existsSync(lockPath)) throw new Error(`Skills CLI did not write its installation inventory at ${lockPath}; check the installer output above`);
+      const restored = JSON.parse(readFileSync(lockPath, 'utf8')).skills;
       for (const name of vendor.skills) {
         if (!existsSync(join(canonical, name, 'SKILL.md')) || restored[name]?.source !== vendor.source || restored[name]?.ref !== vendor.ref) {
           throw new Error(`Installer did not restore ${name} at ${vendor.source}@${vendor.ref}`);
         }
       }
+      // Finish each source before the next download; later failures leave it usable.
+      for (const name of vendor.skills) linkSkill(name);
     }
   } else {
     // Adopt older manual installs without fetching or changing skill contents.
     for (const vendor of manifest.vendors) for (const name of vendor.skills) {
       const destination = join(canonical, name);
-      if (existsSync(join(destination, 'SKILL.md'))) continue;
-      const source = targets.map(t => join(home, t, name)).find(p => existsSync(join(p, 'SKILL.md')));
-      if (!source) throw new Error(`Missing ${name}; rerun without --link-existing to restore it`);
-      if (present(destination)) backup(destination);
-      mkdirSync(canonical, { recursive: true });
-      cpSync(source, destination, { recursive: true, dereference: true });
-    }
-  }
-  // Normalize supported clients to one source, preserving conflicting installed copies.
-  for (const vendor of manifest.vendors) for (const name of vendor.skills) {
-    for (const target of targets) link(join(canonical, name), join(home, target, name));
-  }
-  if (personal) {
-    const names = readdirSync(join(personal, 'skills')).filter(name => existsSync(join(personal, 'skills', name, 'SKILL.md')));
-    for (const name of names) {
-      const source = join(personal, 'skills', name);
-      for (const target of ['.agents/skills', ...targets]) link(source, join(home, target, name));
-    }
-    if (!merge) {
-      link(join(root, 'ai/.agents/AGENTS.md'), join(home, '.agents/AGENTS.md'));
-      link(join(home, '.agents/AGENTS.md'), join(home, '.codex/AGENTS.md'));
-      link(join(home, '.agents/AGENTS.md'), join(home, '.pi/agent/AGENTS.md'));
-      link(join(root, 'ai/.claude/CLAUDE.md'), join(home, '.claude/CLAUDE.md'));
+      if (!existsSync(join(destination, 'SKILL.md'))) {
+        const source = targets.map(t => join(home, t, name)).find(p => existsSync(join(p, 'SKILL.md')));
+        if (!source) throw new Error(`Missing ${name}; rerun without --link-existing to restore it`);
+        if (present(destination)) backup(destination);
+        mkdirSync(canonical, { recursive: true });
+        cpSync(source, destination, { recursive: true, dereference: true });
+      }
+      linkSkill(name);
     }
   }
   if (!args.has('--vendors-only')) {

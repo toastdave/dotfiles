@@ -88,6 +88,8 @@ mise exec -- node scripts/setup-ai.mjs --link-existing
 
 If an upstream fetch fails, rerun with `--resume` to skip already completed manifest revisions. A normal run reinstalls vendor files from their pinned source.
 
+The portable install inputs are in `ai/skills.json`: CLI version, source repositories, exact vendor commits, and skill names. The CLI generates an installed-skill inventory on each machine at `$XDG_STATE_HOME/skills/.skill-lock.json` when `XDG_STATE_HOME` is set, otherwise `~/.agents/.skill-lock.json`. No existing inventory is required for a fresh install. Custom skills are linked before vendor downloads, and each completed vendor source is linked immediately, so a later download failure leaves those skills usable.
+
 Conflicting copies and dead shared-skill links are moved to `~/.local/state/dotfiles/backups/<run>/`. Stow saves conflicting configuration beside its original path with `.bootstrap-backup-*`. Neither script uses `--adopt`, resets a checkout, or commits authentication.
 
 Authenticate Claude, Codex, OpenCode, Pi, GitHub, and infrastructure CLIs on each new machine. Restore SSH keys from your secure backup or generate new ones; set Git identity explicitly:
@@ -124,7 +126,7 @@ Plugin preferences from `~/.codex/config.toml` and Claude settings are captured 
 - `mise self-update` updates mise itself. Then `mise upgrade` updates rolling global tools. Claude's native installation updates through its own updater; an existing Homebrew installation stays Homebrew-managed.
 - Run `mise exec -- node scripts/doctor.mjs` after changes. It checks runtime availability, declarations, canonical configuration links, and skill links. It does not prove authentication or a mobile build.
 
-For setup changes, run `npm ci --prefix scripts`, `npm test --prefix scripts`, and `bash tests/stow.sh`. The configuration tests exercise first install, preservation of existing Omarchy settings and credentials, JSONC comments, shell sourcing, symlinks, backups, invalid-input recovery, and rerun idempotency. A real Omarchy desktop still needs validation for desktop shortcuts, theming and graphical agent integrations.
+For setup changes, run `npm ci --prefix scripts`, `npm test --prefix scripts`, and `bash tests/stow.sh`. The configuration tests exercise first install, preservation of existing Omarchy settings and credentials, JSONC comments, shell sourcing, symlinks, backups, invalid-input recovery, and rerun idempotency. The restore integration test runs the pinned skills CLI with actual local Git repositories, checking fresh installs with and without XDG state, resume, and usable custom skills after a vendor failure. It downloads the CLI through npm when uncached. A real Omarchy desktop still needs validation for desktop shortcuts, theming and graphical agent integrations.
 
 Pi uses the current `@earendil-works` package scope ([migration notice](https://pi.dev/changelog/2026/5/7/pi-has-a-new-home)).
 
