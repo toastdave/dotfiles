@@ -85,6 +85,28 @@ test('invalid JSONC or managed blocks abort all planned changes', t => {
   assert.equal(existsSync(join(home, '.claude.json')), false);
 });
 
+test('temporary storage setup works in login shells, desktop startup and systemd without changing client settings', t => {
+  const { home, put, read } = fixture(t);
+  put('.bash_profile', 'export RETAIN_PROFILE=yes\n');
+  put('.bashrc', 'export RETAIN_BASHRC=yes\n');
+  put('.config/uwsm/env.d/20-temporary-storage', 'export RETAIN_DESKTOP=yes\n');
+  put('.codex/config.toml', 'model = "keep-this"\n');
+  const options = { temporaryStorageOnly: true };
+  configuration(home, options).apply();
+  assert.deepEqual(configuration(home, options).apply(), []);
+  assert.equal(read('.codex/config.toml'), 'model = "keep-this"\n');
+  for (const [file, sentinel] of [['.bash_profile', 'RETAIN_PROFILE'], ['.bashrc', 'RETAIN_BASHRC'], ['.config/uwsm/env.d/20-temporary-storage', 'RETAIN_DESKTOP']]) {
+    const value = execFileSync('/bin/sh', ['-c', `. "$1"; printf '%s\\n' "$TMPDIR" "$TMP" "$TEMP" "\${${sentinel}}"`, 'check', join(home, file)], { env: { ...process.env, HOME: home }, encoding: 'utf8' });
+    assert.deepEqual(value.trimEnd().split('\n'), [join(home, '.cache/tmp'), join(home, '.cache/tmp'), join(home, '.cache/tmp'), 'yes']);
+  }
+  assert.equal(statSync(join(home, '.cache/tmp')).mode & 0o777, 0o700);
+  const generator = '/usr/lib/systemd/user-environment-generators/30-systemd-environment-d-generator';
+  if (existsSync(generator)) {
+    const generated = execFileSync(generator, [], { env: { ...process.env, HOME: home, XDG_CONFIG_HOME: join(home, '.config') }, encoding: 'utf8' });
+    for (const variable of ['TMPDIR', 'TMP', 'TEMP']) assert.ok(generated.split('\n').includes(`${variable}=${join(home, '.cache/tmp')}`));
+  }
+});
+
 test('a dangling config symlink is reported without replacing it', t => {
   const { home } = fixture(t);
   symlinkSync(join(home, 'missing'), join(home, '.bashrc'));

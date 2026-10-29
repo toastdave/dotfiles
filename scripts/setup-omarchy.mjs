@@ -59,6 +59,20 @@ export function configureShell(plan) {
   const quoted = `'${source.replaceAll("'", "'\\''")}'`;
   plan.block(join(plan.home, '.bashrc'), 'omarchy', `[[ -r ${quoted} ]] && source ${quoted}`);
 }
+export function configureTemporaryStorage(plan) {
+  const source = join(root, 'omarchy/temporary-storage.sh');
+  const quoted = `'${source.replaceAll("'", "'\\''")}'`;
+  const load = `[ -r ${quoted} ] && . ${quoted}`;
+  // Login shells include noninteractive command runners; Bashrc also covers
+  // interactive terminals opened without a login shell.
+  for (const name of ['.bash_profile', '.bashrc']) plan.block(join(plan.home, name), 'temporary-storage', load);
+  plan.block(join(plan.home, '.config/uwsm/env.d/20-temporary-storage'), 'temporary-storage', load);
+  plan.set(join(plan.home, '.config/environment.d/20-temporary-storage.conf'),
+    'TMPDIR=${HOME}/.cache/tmp\nTMP=${TMPDIR}\nTEMP=${TMPDIR}\n');
+  plan.set(join(plan.home, '.config/user-tmpfiles.d/temporary-storage.conf'),
+    '# Remove temp files after 14 days without access or modification.\n' +
+    'd %h/.cache/tmp 0700 - - 14d\n');
+}
 export function configureInstructions(plan) {
   const content = readFileSync(join(root, 'ai/.agents/AGENTS.md'), 'utf8');
   for (const name of ['.agents/AGENTS.md', '.codex/AGENTS.md', '.pi/agent/AGENTS.md']) {
@@ -72,12 +86,17 @@ export function configureInstructions(plan) {
     plan.block(claude, 'working-agreements', '@~/.agents/AGENTS.md');
   }
 }
-export function configuration(home = homedir(), { toolsOnly = false } = {}) {
+export function configuration(home = homedir(), { toolsOnly = false, temporaryStorageOnly = false } = {}) {
   const plan = new ConfigPlan(home);
+  if (temporaryStorageOnly) {
+    configureTemporaryStorage(plan);
+    return plan;
+  }
   configureTools(plan);
   if (!toolsOnly) {
     configureClients(plan);
     configureShell(plan);
+    configureTemporaryStorage(plan);
     configureInstructions(plan);
   }
   return plan;
@@ -96,9 +115,17 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       process.exit(0);
     }
     const args = new Set(argv);
-    if ([...args].some(arg => !['--tools-only', '--check'].includes(arg))) throw new Error('Usage: node scripts/setup-omarchy.mjs [--tools-only] [--check] | --list-tools | --browser PATH');
+    if ([...args].some(arg => !['--tools-only', '--temporary-storage-only', '--check'].includes(arg)) || args.has('--tools-only') && args.has('--temporary-storage-only')) throw new Error('Usage: node scripts/setup-omarchy.mjs [--tools-only | --temporary-storage-only] [--check] | --list-tools | --browser PATH');
     if (process.env.MISE_GLOBAL_CONFIG_FILE) throw new Error('Unset MISE_GLOBAL_CONFIG_FILE so mise can load its conf.d fragments');
-    configuration(homedir(), { toolsOnly: args.has('--tools-only') }).apply({ check: args.has('--check') });
+    const check = args.has('--check');
+    configuration(homedir(), { toolsOnly: args.has('--tools-only'), temporaryStorageOnly: args.has('--temporary-storage-only') }).apply({ check });
+    if (!check && !args.has('--tools-only')) {
+      const { execFileSync } = await import('node:child_process');
+      execFileSync('systemd-tmpfiles', ['--user', '--create', 'temporary-storage.conf'], { stdio: 'inherit' });
+      execFileSync('systemctl', ['--user', 'enable', '--now', 'systemd-tmpfiles-setup.service', 'systemd-tmpfiles-clean.timer'], { stdio: 'inherit' });
+      const directory = join(homedir(), '.cache/tmp');
+      execFileSync('dbus-update-activation-environment', ['--systemd', `TMPDIR=${directory}`, `TMP=${directory}`, `TEMP=${directory}`], { stdio: 'inherit' });
+    }
     console.log(args.has('--check') ? 'Omarchy configuration checks passed.' : 'Omarchy configuration merged. Existing settings and instructions retained.');
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }
