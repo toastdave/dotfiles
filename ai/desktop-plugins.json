@@ -78,10 +78,6 @@
       "enabled": true
     },
     {
-      "id": "superpowers@openai-curated",
-      "enabled": true
-    },
-    {
       "id": "template-creator@openai-primary-runtime",
       "enabled": true
     },

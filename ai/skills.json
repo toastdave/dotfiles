@@ -142,13 +142,6 @@
       "ref": "477bcb28c9812b385cb51a4605ddf30d7b2266e2"
     },
     {
-      "source": "obra/superpowers",
-      "skills": [
-        "using-git-worktrees"
-      ],
-      "ref": "8ca22dba9a94f28898bbce59f2537ff4d87c747d"
-    },
-    {
       "source": "pbakaus/impeccable",
       "skills": [
         "impeccable"
