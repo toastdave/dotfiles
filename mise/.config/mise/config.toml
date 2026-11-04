@@ -2,7 +2,7 @@ min_version = "2026.10.18"
 
 [tools]
 bat = "latest"
-bun = "1.3.14"
+bun = "1.4.4"
 direnv = "latest"
 eza = "latest"
 fzf = "latest"
@@ -15,7 +15,7 @@ opencode = "latest"
 "npm:agent-browser" = { version = "latest", depends = ["node"] }
 "npm:@earendil-works/pi-coding-agent" = { version = "0.80.10", depends = ["node"] }
 pnpm = "10.33.0"
-python = "latest"
+python = "3.14.9"
 ripgrep = "latest"
 starship = "latest"
 uv = "latest"
