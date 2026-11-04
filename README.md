@@ -112,6 +112,14 @@ mise exec -- node scripts/setup-ai.mjs --link-existing
 
 If an upstream fetch fails, rerun with `--resume` to skip already completed manifest revisions. A normal run reinstalls vendor files from their pinned source.
 
+Restore one reviewed source without touching personal skills or global instructions:
+
+```sh
+node scripts/setup-ai.mjs --vendors-only --source=t3dotgg/tstack --resume
+```
+
+The pinned TStack subset supplies PR filing, one supported PR watcher, and attributed GitHub comments. It does not install review councils or automatic merge recipes. Repository commands and integration policy remain authoritative. Superpowers stays excluded from both plugin and skill restoration.
+
 The portable install inputs are in `ai/skills.json`: CLI version, source repositories, exact vendor commits, and skill names. The CLI generates an installed-skill inventory on each machine at `$XDG_STATE_HOME/skills/.skill-lock.json` when `XDG_STATE_HOME` is set, otherwise `~/.agents/.skill-lock.json`. No existing inventory is required for a fresh install. Custom skills are linked before vendor downloads, and each completed vendor source is linked immediately, so a later download failure leaves those skills usable.
 
 Conflicting copies and dead shared-skill links are moved to `~/.local/state/dotfiles/backups/<run>/`. Stow saves conflicting configuration beside its original path with `.bootstrap-backup-*`. Neither script uses `--adopt`, resets a checkout, or commits authentication.

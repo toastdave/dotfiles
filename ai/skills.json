@@ -228,6 +228,15 @@
       "skills": [
         "sandbox-sdk"
       ]
+    },
+    {
+      "source": "t3dotgg/tstack",
+      "ref": "1085050f3baed1ac724caa4a8166145fb2ac88af",
+      "skills": [
+        "file-pr",
+        "babysit-pr",
+        "leaving-pr-comments"
+      ]
     }
   ]
 }

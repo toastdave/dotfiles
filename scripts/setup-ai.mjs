@@ -15,8 +15,18 @@ const args = new Set(process.argv.slice(2));
 const merge = args.has('--merge') || (existsSync(join(home, '.bashrc')) &&
   readFileSync(join(home, '.bashrc'), 'utf8').includes('# >>> dotfiles omarchy >>>'));
 const valid = ['--link-existing', '--vendors-only', '--resume', '--merge'];
-if ([...args].some(x => !valid.includes(x))) {
-  console.error(`Usage: node scripts/setup-ai.mjs [${valid.join(' | ')}]`);
+const sources = [...args].filter(x => x.startsWith('--source=')).map(x => x.slice('--source='.length));
+if (sources.some(source => !manifest.vendors.some(vendor => vendor.source === source))) {
+  console.error('Every --source must name a vendor in ai/skills.json');
+  process.exit(2);
+}
+if (sources.length && !args.has('--vendors-only')) {
+  console.error('--source requires --vendors-only; selected vendor restoration does not change instructions');
+  process.exit(2);
+}
+const vendors = sources.length ? manifest.vendors.filter(vendor => sources.includes(vendor.source)) : manifest.vendors;
+if ([...args].some(x => !valid.includes(x) && !x.startsWith('--source='))) {
+  console.error(`Usage: node scripts/setup-ai.mjs [${valid.join(' | ')}] [--source=owner/repo]`);
   process.exit(2);
 }
 const run = (command, argv, options = {}) => execFileSync(command, argv, { stdio: 'inherit', ...options });
@@ -82,7 +92,7 @@ try {
     console.log(`Linked ${names.length} personal skills from ${personal}`);
   }
   if (!args.has('--link-existing')) {
-    for (const vendor of manifest.vendors) {
+    for (const vendor of vendors) {
       if (args.has('--resume')) {
         const lock = existsSync(lockPath) ? JSON.parse(readFileSync(lockPath, 'utf8')).skills : {};
         if (vendor.skills.every(name => lock[name]?.source === vendor.source && lock[name]?.ref === vendor.ref && existsSync(join(canonical, name, 'SKILL.md')))) {
@@ -115,7 +125,7 @@ try {
     }
   } else {
     // Adopt older manual installs without fetching or changing skill contents.
-    for (const vendor of manifest.vendors) for (const name of vendor.skills) {
+    for (const vendor of vendors) for (const name of vendor.skills) {
       const destination = join(canonical, name);
       if (!existsSync(join(destination, 'SKILL.md'))) {
         const source = targets.map(t => join(home, t, name)).find(p => existsSync(join(p, 'SKILL.md')));
