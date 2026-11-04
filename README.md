@@ -22,7 +22,7 @@ Existing GitHub authentication is passed privately to mise downloads to avoid an
 
 ## Daily workflow and tool ownership
 
-After pulling this repository, run setup to reconcile the machine:
+Requires mise 2026.10.18 or newer. Update standalone mise with `mise self-update`, or a Homebrew-owned mise with `brew upgrade mise`. After pulling this repository, run setup to reconcile the machine:
 
 ```sh
 cd ~/dotfiles

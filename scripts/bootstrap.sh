@@ -540,6 +540,11 @@ set_default_shell_to_zsh() {
     fi
   fi
 
+  if [ "$login_shell" = "$zsh_path" ]; then
+    record_success "zsh already set as login shell"
+    return 0
+  fi
+
   if [ -n "$SUDO" ]; then
     run_cmd "Set zsh as default shell" "$SUDO" chsh -s "$zsh_path" "$login_user" || return 1
   else
@@ -723,7 +728,11 @@ main() {
   . "$TARGET_SCRIPT"
 
   report_path_setup
-  ensure_sudo_access
+  # Homebrew handles privileges for its own installers. Ordinary Mac setup
+  # writes user-owned files and should not request sudo preemptively.
+  if [ "$(uname -s)" != Darwin ]; then
+    required_step "sudo access" ensure_sudo_access || { print_report; return 1; }
+  fi
   required_step "Native bootstrap packages" install_platform_packages || { print_report; return 1; }
   required_step "mise installation" install_mise || { print_report; return 1; }
   if [ "$HEADLESS" -eq 0 ]; then
