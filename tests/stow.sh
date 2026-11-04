@@ -21,6 +21,8 @@ compgen -G "$HOME/.config/git/ignore.bootstrap-backup-*" >/dev/null
 printf 'Stow first install, conflict recovery, and rerun passed.\n'
 
 # OpenCode rewrites its MCPs and preferences locally. Setup must never restow it.
+mkdir -p "$HOME/.config/opencode"
+ln -s "$ROOT/opencode/.config/opencode/opencode.json" "$HOME/.config/opencode/opencode.json"
 seed_opencode_config
 [ -f "$HOME/.config/opencode/opencode.json" ]
 [ ! -L "$HOME/.config/opencode/opencode.json" ]

@@ -610,8 +610,21 @@ stow_packages() {
   return "$status"
 }
 
+detach_opencode_config() (
+  # Convert only our old Stow link; preserve bytes and clean up on interruption.
+  local target=$1 temporary
+  temporary=$(mktemp "${target}.bootstrap.XXXXXX") || return 1
+  trap 'rm -f "$temporary"' EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  cp -L "$target" "$temporary" && mv "$temporary" "$target"
+)
+
 seed_opencode_config() {
   local config_dir="$HOME/.config/opencode"
+  if [ -L "$config_dir/opencode.json" ] && [ "$config_dir/opencode.json" -ef "$DOTFILES_DIR/opencode/.config/opencode/opencode.json" ]; then
+    run_cmd "Make OpenCode configuration machine-local" detach_opencode_config "$config_dir/opencode.json" || return 1
+  fi
   # Client preferences/MCPs are mutable local state, including during --skip-ai.
   if [ -e "$config_dir/opencode.json" ] || [ -L "$config_dir/opencode.json" ] || \
      [ -e "$config_dir/opencode.jsonc" ] || [ -L "$config_dir/opencode.jsonc" ]; then
