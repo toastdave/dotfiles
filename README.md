@@ -42,7 +42,7 @@ The same tasks are installed globally, so they also work outside the checkout. P
 - Linux system/build packages use apt, dnf, or pacman. Use the distribution updater for OS/desktop upgrades; on Omarchy use `omarchy update`. `mise run update` updates global mise tools without modifying project pins or silently upgrading the OS.
 - A command has one declared owner. Homebrew's own Node/Ruby dependencies may coexist with development runtimes. Setup verifies both native agents before removing obsolete agent CLI casks/npm installs, rebuilds shims, and leaves credentials, conversations and desktop apps alone. Running obsolete npm agent versions are retained until their sessions exit; rerun setup afterward. An active Homebrew agent must be closed before its CLI cask can be removed.
 
-Setup ends with doctor checks. Doctor checks executable ownership as well as availability, catches duplicate agent CLI casks, and verifies that global tasks point to this checkout. Existing Omarchy account dispatchers are preserved. Pulling alone does not migrate installations; run setup on each machine. Moving a checkout also requires setup to refresh global task paths.
+OpenCode configuration is seeded only when both its JSON and JSONC configs are absent; existing local MCPs and preferences survive setup, including `--skip-ai`. Setup ends with doctor checks. Doctor checks executable ownership as well as availability, catches duplicate agent CLI casks, and verifies that global tasks point to this checkout. Existing Omarchy account dispatchers are preserved. Pulling alone does not migrate installations; run setup on each machine. Moving a checkout also requires setup to refresh global task paths.
 
 ## New Linux machine
 

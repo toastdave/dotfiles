@@ -19,3 +19,18 @@ stow_packages
 compgen -G "$HOME/.zprofile.bootstrap-backup-*" >/dev/null
 compgen -G "$HOME/.config/git/ignore.bootstrap-backup-*" >/dev/null
 printf 'Stow first install, conflict recovery, and rerun passed.\n'
+
+# OpenCode rewrites its MCPs and preferences locally. Setup must never restow it.
+seed_opencode_config
+[ -f "$HOME/.config/opencode/opencode.json" ]
+[ ! -L "$HOME/.config/opencode/opencode.json" ]
+printf '{"mcp":{"local":{"type":"local","command":["retain-me"]}}}\n' > "$HOME/.config/opencode/opencode.json"
+cp "$HOME/.config/opencode/opencode.json" "$HOME/expected-opencode.json"
+stow_packages
+seed_opencode_config
+cmp "$HOME/expected-opencode.json" "$HOME/.config/opencode/opencode.json"
+rm "$HOME/.config/opencode/opencode.json"
+printf '{ // local JSONC preferences\n}\n' > "$HOME/.config/opencode/opencode.jsonc"
+seed_opencode_config
+[ ! -e "$HOME/.config/opencode/opencode.json" ]
+printf 'OpenCode local JSON/JSONC settings survive setup reruns.\n'

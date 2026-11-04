@@ -18,7 +18,7 @@ COMMAND_FAILURE_LABELS=()
 COMMAND_FAILURE_COMMANDS=()
 COMMAND_FAILURE_OUTPUTS=()
 
-PACKAGES=(zsh starship mise ghostty opencode tmux git)
+PACKAGES=(zsh starship mise ghostty tmux git)
 HEADLESS=0
 SKIP_AI=0
 OMARCHY=0
@@ -610,6 +610,18 @@ stow_packages() {
   return "$status"
 }
 
+seed_opencode_config() {
+  local config_dir="$HOME/.config/opencode"
+  # Client preferences/MCPs are mutable local state, including during --skip-ai.
+  if [ -e "$config_dir/opencode.json" ] || [ -L "$config_dir/opencode.json" ] || \
+     [ -e "$config_dir/opencode.jsonc" ] || [ -L "$config_dir/opencode.jsonc" ]; then
+    record_success "Preserved existing OpenCode configuration"
+    return 0
+  fi
+  run_cmd "Create OpenCode config directory" mkdir -p "$config_dir" || return 1
+  run_cmd "Seed OpenCode defaults" cp "$DOTFILES_DIR/opencode/.config/opencode/opencode.json" "$config_dir/opencode.json"
+}
+
 run_mise_install() {
   if ! resolve_mise_bin; then
     record_warning "mise not available, skipping mise install"
@@ -742,6 +754,7 @@ main() {
   required_step "Git defaults" set_git_default_branch
   set_default_shell_to_zsh
   required_step "Stow packages" stow_packages || { print_report; return 1; }
+  required_step "OpenCode defaults" seed_opencode_config || { print_report; return 1; }
   required_step "mise tools" run_mise_install || { print_report; return 1; }
   required_step "TPM installation" install_tpm
   required_step "tmux plugin installation" install_tmux_plugins
