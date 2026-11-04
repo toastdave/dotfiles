@@ -10,7 +10,15 @@ import { configuration, root, toolDefaults } from '../scripts/setup-omarchy.mjs'
 
 function fixture(t) {
   const home = mkdtempSync(join(tmpdir(), 'dotfiles-omarchy-'));
-  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const previous = { MISE_CONFIG_DIR: process.env.MISE_CONFIG_DIR, XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME };
+  process.env.MISE_CONFIG_DIR = join(home, '.config/mise');
+  process.env.XDG_CONFIG_HOME = join(home, '.config');
+  t.after(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+    rmSync(home, { recursive: true, force: true });
+  });
   const put = (name, content) => { const p = join(home, name); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, content); return p; };
   return { home, put, read: name => readFileSync(join(home, name), 'utf8') };
 }

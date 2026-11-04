@@ -46,7 +46,7 @@ test('real skills CLI restores fresh homes, resumes XDG installs and preserves c
   const run = (home, xdg, ...args) => {
     const result = spawnSync(process.execPath, [join(repo, 'scripts/setup-ai.mjs'), '--merge', ...args], {
       cwd: repo, encoding: 'utf8', timeout: 90000, maxBuffer: 2 * 1024 * 1024,
-      env: { ...process.env, HOME: home, XDG_STATE_HOME: xdg,
+      env: { ...process.env, HOME: home, XDG_STATE_HOME: xdg, MISE_CONFIG_DIR: join(home, '.config/mise'),
         XDG_CONFIG_HOME: join(home, '.config'), CODEX_HOME: join(home, '.codex'), CLAUDE_CONFIG_DIR: join(home, '.claude'),
         PERSONAL_SKILLS_DIR: '', GH_TOKEN: '', GITHUB_TOKEN: '', CI: '1', NO_COLOR: '1', DO_NOT_TRACK: '1',
         npm_config_cache: process.env.npm_config_cache || join(homedir(), '.npm'),
