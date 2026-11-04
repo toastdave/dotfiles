@@ -53,6 +53,8 @@ bootstrap_omarchy() {
     "$MISE_BIN" -C "$HOME" exec node -- npm ci --prefix "$SCRIPT_DIR" --ignore-scripts --no-audit --no-fund || { print_report; return 1; }
   required_step "Omarchy configuration" omarchy_configure || { print_report; return 1; }
   required_step "mise tools" omarchy_install_tools || { print_report; return 1; }
+  required_step "Tool ownership and management commands" run_cmd "Reconcile tool ownership" \
+    "$MISE_BIN" -C "$HOME" exec -- node "$SCRIPT_DIR/setup-tooling.mjs" || { print_report; return 1; }
   required_step "Browser runtime" omarchy_browser || { print_report; return 1; }
   if [ "$SKIP_AI" -eq 0 ]; then
     required_step "Shared skills and Pi extensions" run_cmd "Restore AI skills additively" \

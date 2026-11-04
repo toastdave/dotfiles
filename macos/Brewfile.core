@@ -1,0 +1,17 @@
+# Native bootstrap dependencies and deliberate macOS terminal-tool exceptions.
+# Development runtimes and portable CLIs belong in mise/.config/mise/config.toml.
+brew "git"
+brew "curl"
+brew "gh"
+brew "stow"
+brew "zsh"
+brew "tmux"
+brew "btop"
+brew "git-delta"
+brew "fd"
+
+# Erlang/Elixir build dependencies when a prebuilt runtime is unavailable.
+brew "autoconf"
+brew "openssl@3"
+brew "ncurses"
+brew "unixodbc"

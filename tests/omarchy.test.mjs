@@ -139,7 +139,7 @@ test('client formatting without a trailing newline stays a configuration no-op',
   assert.deepEqual(configuration(home).apply(), []);
   configuration(home).apply({ check: true });
   assert.equal(read('.claude.json'), client);
-  put('.config/mise/conf.d/10-dotfiles.toml', TOML.stringify({ tools: toolDefaults() }).trimEnd());
+  put('.config/mise/conf.d/10-dotfiles.toml', TOML.stringify(TOML.parse(read('.config/mise/conf.d/10-dotfiles.toml'))).trimEnd());
   assert.deepEqual(configuration(home).apply(), []);
   configuration(home).apply({ check: true });
 });
@@ -160,12 +160,12 @@ test('a new Pi setup follows the generated Omarchy theme while an existing custo
 test('profile inherits canonical tool versions and uses Omarchy agent names', () => {
   const canonical = TOML.parse(readFileSync(join(root,'mise/.config/mise/config.toml'),'utf8')).tools;
   const tools = toolDefaults();
-  assert.deepEqual(tools.codex, canonical['npm:@openai/codex']);
+  assert.deepEqual(tools.codex, canonical.codex);
   assert.deepEqual(tools.pi, { ...canonical['npm:@earendil-works/pi-coding-agent'], version: 'latest' });
   assert.equal(tools.claude, 'latest');
   assert.equal(tools.railway, 'latest');
   assert.equal('npm:@openai/codex' in tools, false);
   for (const [key, value] of Object.entries(canonical)) {
-    if (!['npm:@openai/codex','npm:@earendil-works/pi-coding-agent'].includes(key)) assert.deepEqual(tools[key],value);
+    if (!['npm:@earendil-works/pi-coding-agent'].includes(key)) assert.deepEqual(tools[key],value);
   }
 });

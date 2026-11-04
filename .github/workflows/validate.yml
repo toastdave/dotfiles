@@ -24,9 +24,17 @@ jobs:
           else
             brew install stow
           fi
+      - name: Install mise
+        shell: bash
+        run: |
+          curl -fsSL https://mise.run | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: npm ci --prefix scripts --ignore-scripts --no-audit --no-fund
       - run: npm test --prefix scripts
       - run: bash tests/stow.sh
+      - name: Native agent runtime and repeat install
+        shell: bash
+        run: bash tests/tooling-runtime.sh
       - name: Syntax and whitespace
         shell: bash
         run: |

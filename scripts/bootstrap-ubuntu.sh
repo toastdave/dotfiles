@@ -7,7 +7,7 @@ install_platform_packages() {
 
   run_shell "Update apt package index" "$SUDO apt-get update"
 
-  install_apt_packages "Install Ubuntu bootstrap packages" git curl gh stow zsh tmux unzip fontconfig build-essential
+  install_apt_packages "Install Ubuntu bootstrap packages" git curl gh stow zsh tmux unzip fontconfig build-essential autoconf pkg-config libssl-dev libncurses-dev unixodbc-dev
 }
 
 install_platform_gui_apps() {

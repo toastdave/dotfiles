@@ -18,7 +18,7 @@ test('real skills CLI restores fresh homes, resumes XDG installs and preserves c
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, contents);
   };
-  for (const file of ['scripts/setup-ai.mjs', 'scripts/setup-omarchy.mjs', 'scripts/lib/skills.mjs', 'scripts/lib/config.mjs']) {
+  for (const file of ['scripts/setup-ai.mjs', 'scripts/setup-omarchy.mjs', 'scripts/lib/skills.mjs', 'scripts/lib/config.mjs', 'scripts/lib/tooling.mjs']) {
     mkdirSync(dirname(join(repo, file)), { recursive: true });
     cpSync(join(root, file), join(repo, file));
   }

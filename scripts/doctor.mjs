@@ -4,6 +4,7 @@ import { join, dirname, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { agentOwnership, managementTasks } from './lib/tooling.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const home = homedir();
 const args = new Set(process.argv.slice(2));
@@ -15,7 +16,7 @@ const omarchy = args.has('--omarchy') || (existsSync(join(home,'.bashrc')) && re
 let failures = 0;
 function check(label, task) {
   try { task(); console.log(`ok   ${label}`); }
-  catch (e) { failures++; console.error(`FAIL ${label}: ${e.message}`); }
+  catch (e) { failures++; console.error(`FAIL ${label}: ${e.message}${e.signal ? ` (${e.signal})` : ''}`); }
 }
 const run = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8', timeout: 60000, stdio: ['ignore','pipe','pipe'] });
 for (const [name, commandArgs] of Object.entries({ mise: ['--version'],
@@ -25,6 +26,15 @@ for (const [name, commandArgs] of Object.entries({ mise: ['--version'],
   delta: ['--version'], codex: ['--version'], claude: ['--version'], opencode: ['--version'], pi: ['--version'] })) {
   check(name, () => run(name, commandArgs));
 }
+check('agent executable ownership', () => agentOwnership({ omarchy }));
+check('global management commands', () => {
+  const tasks = JSON.parse(run('mise', ['-C', home, 'tasks', 'ls', '--global', '--json']));
+  const expected = managementTasks(root);
+  for (const name of Object.keys(expected)) {
+    const task = tasks.find(task => task.name === name);
+    if (!task || task.dir !== root || task.run?.[0] !== expected[name].run) throw new Error(`missing or stale ${name}; rerun setup from this checkout`);
+  }
+});
 check('mise declarations installed', () => {
   const missing = run('mise', ['ls', '--missing', '--json']).trim();
   if (missing && Object.keys(JSON.parse(missing)).length) throw new Error(missing);

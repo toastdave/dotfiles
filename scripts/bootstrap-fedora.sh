@@ -7,7 +7,7 @@ install_platform_packages() {
 
   run_shell "Refresh dnf metadata" "$SUDO dnf makecache"
 
-  install_dnf_packages "Install Fedora bootstrap packages" git curl gh stow zsh tmux unzip fontconfig gcc make nss cups-libs libdrm mesa-libgbm alsa-lib gtk3
+  install_dnf_packages "Install Fedora bootstrap packages" git curl gh stow zsh tmux unzip fontconfig gcc gcc-c++ make autoconf pkgconf-pkg-config openssl-devel ncurses-devel unixODBC-devel nss cups-libs libdrm mesa-libgbm alsa-lib gtk3
 }
 
 install_platform_gui_apps() {

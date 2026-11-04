@@ -5,7 +5,7 @@ install_platform_packages() {
     return 1
   fi
 
-  install_brew_formulas "Install macOS Homebrew bootstrap formulas" git curl gh stow zsh tmux btop git-delta fd
+  run_cmd "Install macOS Homebrew essentials" brew bundle install --no-upgrade --file="$DOTFILES_DIR/macos/Brewfile.core"
 }
 
 install_platform_gui_apps() {

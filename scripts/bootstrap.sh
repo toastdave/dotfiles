@@ -432,21 +432,7 @@ install_agent_browser() {
   if [ "${TARGET_SCRIPT##*/}" = bootstrap-ubuntu.sh ]; then
     flags+=(--with-deps)
   fi
-  run_cmd "Install agent-browser Chromium runtime" "$MISE_BIN" -C "$HOME" exec -- agent-browser install "${flags[@]}"
-}
-
-install_claude() {
-  if have claude; then
-    record_success "Claude Code already installed"
-    return 0
-  fi
-  local installer
-  installer=$(mktemp) || return 1
-  run_cmd "Download Claude Code native installer" curl -fsSL https://claude.ai/install.sh -o "$installer" || { rm -f "$installer"; return 1; }
-  run_cmd "Install Claude Code" bash "$installer" 2.1.289
-  local status=$?
-  rm -f "$installer"
-  [ "$status" -eq 0 ] && run_cmd "Verify Claude Code" "$HOME/.local/bin/claude" --version
+  run_cmd "Install agent-browser Chromium runtime" "$MISE_BIN" -C "$HOME" exec -- agent-browser install ${flags[@]+"${flags[@]}"}
 }
 
 ensure_sudo_access() {
@@ -750,11 +736,15 @@ main() {
   required_step "mise tools" run_mise_install || { print_report; return 1; }
   required_step "TPM installation" install_tpm
   required_step "tmux plugin installation" install_tmux_plugins
-  required_step "Claude Code installation" install_claude
+  required_step "Management dependencies" run_cmd "Install locked setup dependencies" "$MISE_BIN" -C "$HOME" exec -- npm ci --prefix "$SCRIPT_DIR" --ignore-scripts --no-audit --no-fund || { print_report; return 1; }
+  required_step "Tool ownership and management commands" run_cmd "Reconcile tool ownership" "$MISE_BIN" -C "$HOME" exec -- node "$SCRIPT_DIR/setup-tooling.mjs" || { print_report; return 1; }
   required_step "Browser automation runtime" install_agent_browser
   if [ "$SKIP_AI" -eq 0 ]; then
     required_step "AI skills (private repo requires GitHub authentication)" run_cmd "Restore AI skills" "$MISE_BIN" exec -- node "$SCRIPT_DIR/setup-ai.mjs"
   fi
+  local doctor_args=()
+  [ "$SKIP_AI" -eq 0 ] || doctor_args+=(--skip-ai)
+  required_step "Developer setup validation" run_cmd "Check developer setup" "$MISE_BIN" -C "$HOME" exec -- node "$SCRIPT_DIR/doctor.mjs" ${doctor_args[@]+"${doctor_args[@]}"}
   print_report
   [ "${#FAILED_ITEMS[@]}" -eq 0 ]
 }

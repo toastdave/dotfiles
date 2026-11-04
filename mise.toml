@@ -1,0 +1,15 @@
+# These definitions also generate the global tasks during setup.
+[tasks.setup]
+description = "Reconcile this machine with the dotfiles setup"
+dir = "."
+run = "bash scripts/manage.sh setup"
+
+[tasks.update]
+description = "Update declared tools and installed Mac packages"
+dir = "."
+run = "bash scripts/manage.sh update"
+
+[tasks.doctor]
+description = "Check tools, ownership, configuration and skills"
+dir = "."
+run = "bash scripts/manage.sh doctor"

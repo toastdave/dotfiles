@@ -5,7 +5,7 @@ install_platform_packages() {
     return 1
   fi
 
-  install_pacman_packages "Install Arch bootstrap packages" git curl github-cli stow zsh tmux unzip fontconfig gcc make nss libcups libdrm mesa alsa-lib gtk3
+  install_pacman_packages "Install Arch bootstrap packages" git curl github-cli stow zsh tmux unzip fontconfig base-devel openssl ncurses unixodbc nss libcups libdrm mesa alsa-lib gtk3
 }
 
 install_platform_gui_apps() {
