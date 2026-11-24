@@ -40,6 +40,13 @@
       "ref": "dda3841f0b294e01e93b1541486beefbfab0915e"
     },
     {
+      "source": "cursor/plugins",
+      "skills": [
+        "statechart"
+      ],
+      "ref": "7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9"
+    },
+    {
       "source": "diffusionstudio/lottie",
       "skills": [
         "text-to-lottie"
